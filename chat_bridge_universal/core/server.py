@@ -1,0 +1,2 @@
+class ChatBridgeUniversalServer(ChatBridgeUniversalBase):
+    pass

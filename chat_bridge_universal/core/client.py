@@ -1,5 +1,6 @@
 from chat_bridge_universal.core.basic import ChatBridgeUniversalBase
+from chat_bridge_universal.core.network.basic import NetworkComponent
 
 
-class ChatBridgeUniversalClient(ChatBridgeUniversalBase):
+class ChatBridgeUniversalClient(ChatBridgeUniversalBase, NetworkComponent):
     pass

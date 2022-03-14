@@ -53,7 +53,7 @@ def load_config(config_path: str, config_class: Type[T]) -> T:
         with open(config_path, 'w', encoding='utf8') as file:
             json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
         print('Default example configure generated'.format(config_path))
-        raise FileNotFoundError(config_path)
+        return load_config(config_path, config_class)
     else:
         with open(config_path, encoding='utf8') as file:
             config.update_from(json.load(file))

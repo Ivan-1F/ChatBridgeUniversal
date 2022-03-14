@@ -1,4 +1,6 @@
-from typing import List
+import json
+import os
+from typing import List, TypeVar, Generic, Type
 
 from mcdreforged.utils.serializer import Serializable
 
@@ -14,14 +16,14 @@ class ClientMeta(Serializable):
     password: str
 
 
-class ClientConfig(ConfigBase):
+class ChatBridgeUniversalClientConfig(ConfigBase):
     name: str = 'MyClientName'
     password: str = 'MyClientPassword'
     server_hostname: str = '127.0.0.1'
     server_port: int = 30001
 
     @property
-    def client_info(self) -> ClientMeta:
+    def client_meta(self) -> ClientMeta:
         return ClientMeta(name=self.name, password=self.password)
 
     @property
@@ -35,3 +37,26 @@ class ChatBridgeUniversalServerConfig(ConfigBase):
     clients: List[ClientMeta] = [
         ClientMeta(name='MyClientName', password='MyClientPassword')
     ]
+
+    @property
+    def address(self) -> Address:
+        return Address(hostname=self.hostname, port=self.port)
+
+
+T = TypeVar('T', ConfigBase, ConfigBase)
+
+
+def load_config(config_path: str, config_class: Type[T]) -> T:
+    config = config_class.get_default()
+    if not os.path.isfile(config_path):
+        print('Configure file not found!'.format(config_path))
+        with open(config_path, 'w', encoding='utf8') as file:
+            json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
+        print('Default example configure generated'.format(config_path))
+        raise FileNotFoundError(config_path)
+    else:
+        with open(config_path, encoding='utf8') as file:
+            config.update_from(json.load(file))
+        with open(config_path, 'w', encoding='utf8') as file:
+            json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
+        return config

@@ -12,7 +12,7 @@ class Address(NamedTuple):
 
 class NetworkComponent:
     def __init__(self):
-        self.sock: Optional[socket.socket] = None
+        self._sock: Optional[socket.socket] = None
 
     def set_socket(self, sock: socket.socket):
-        self.sock = sock
+        self._sock = sock

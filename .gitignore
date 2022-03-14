@@ -133,3 +133,5 @@ dmypy.json
 
 # MCDR
 *.mcdr
+
+*_config.json

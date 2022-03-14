@@ -7,3 +7,4 @@ class ChatBridgeUniversalServer(ChatBridgeUniversalBase, NetworkComponent):
     def __init__(self, config_path: str):
         super().__init__('Server')
         self.config = load_config(config_path, ChatBridgeUniversalServerConfig)
+

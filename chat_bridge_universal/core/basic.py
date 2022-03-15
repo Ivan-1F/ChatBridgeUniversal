@@ -1,6 +1,6 @@
 import json
 import os
-from threading import Thread
+from threading import Thread, current_thread
 from typing import TypeVar, Generic, Callable, Optional, cast, Type, List
 
 from chat_bridge_universal.common.logger import CBULogger
@@ -49,3 +49,18 @@ class CBUBase:
         def func():
             self._main_loop()
         self.__main_thread = self._start_thread(func, self.get_main_thread_name())
+
+    def stop(self):
+        """
+        Stop the client/server, and wait until the MainLoop thread exits
+        Need to be called on a non-MainLoop thread
+        """
+        self.logger.debug('Joining MainLoop thread')
+        # with self.__thread_run_lock:
+        thread = self.__main_thread
+        if thread is not None:
+            if thread is not current_thread():
+                thread.join()
+            else:
+                self.logger.warning('Joining current thread {}'.format(thread))
+        self.logger.debug('Joined MainLoop thread')

@@ -1,30 +1,43 @@
 import socket
+from threading import Event
+from typing import cast, Optional
+
+from prompt_toolkit import PromptSession
+from prompt_toolkit.completion import WordCompleter
 
 from chat_bridge_universal.core.basic import CBUBase
 from chat_bridge_universal.core.config import CBUServerConfig, Address
 
 
 class CBUServer(CBUBase):
-    config: CBUServerConfig
-
     def __init__(self, config_path: str):
         super().__init__(config_path, CBUServerConfig)
-        self.__sock = socket.socket()
+        self.config = cast(CBUServerConfig, self.config)
+        self.__sock: Optional[socket.socket] = None
+        completer = WordCompleter(['stop', 'send', 'list', 'help'])
+        self.__prompt_session = PromptSession(completer=completer)
+        self.__binding_done = Event()
+        self.__stopped = True
 
     def get_main_thread_name(self) -> str:
         return 'ServerThread'
 
     def _main_loop(self):
+        self.__sock = socket.socket()
         try:
             self.__sock.bind(self.config.address)
         except socket.error:
+            self.__stopped = True
             raise RuntimeError('Failed to bind {}'.format(self.config.address))
+        finally:
+            self.__stopped = False
+            self.__binding_done.set()
 
         try:
             self.__sock.listen(5)
             self.__sock.settimeout(3)
             self.logger.info('Server started at {}'.format(self.config.address))
-            while True:
+            while not self.__stopped:
                 try:
                     try:
                         conn, addr = self.__sock.accept()
@@ -39,8 +52,26 @@ class CBUServer(CBUBase):
             self.__stop()
         self.logger.info('bye')
 
+    def start(self):
+        self.__binding_done.clear()
+        super().start()
+        self.__binding_done.wait()
+        self.prompt_loop()
+
+    def prompt_loop(self):
+        while not self.__stopped:
+            text = self.__prompt_session.prompt('> ')
+            self.logger.info('Handling user input: {}'.format(text))
+            if text == 'stop':
+                self.__stop()
+                super().stop()
+
     def __stop(self):
-        pass
+        self.__stopped = True
+        if self.__sock is not None:
+            self.__sock.close()
+            self.__sock = None
+            self.logger.info('Socket closed')
 
 
 if __name__ == '__main__':

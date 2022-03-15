@@ -51,8 +51,8 @@ class CBUServer(CBUBase):
                     address = Address(*addr)
                     counter += 1
                     self.logger.info('New connection #{} from {}'.format(counter, address))
-                except socket.timeout:
-                    continue
+                except:
+                    pass
         finally:
             self.__stop()
         self.logger.info('bye')

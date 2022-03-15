@@ -67,8 +67,11 @@ class CBUServer(CBUBase):
             text = self.__prompt_session.prompt('> ')
             self.logger.info('Handling user input: {}'.format(text))
             if text == 'stop':
-                self.__stop()
-                super().stop()
+                self.stop()
+
+    def stop(self):
+        self.__stop()
+        super().stop()
 
     def __stop(self):
         self.__stopped = True

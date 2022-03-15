@@ -1,20 +1,51 @@
-import socket
-from typing import Optional
+import json
+import os
+from threading import Thread
+from typing import TypeVar, Generic, Callable, Optional, cast, Type, List
 
-from chat_bridge_universal.common.logger import ChatBridgeUniversalLogger
+from chat_bridge_universal.common.logger import CBULogger
+from chat_bridge_universal.core.config import ConfigBase, CBUServerConfig
+
+T = TypeVar('T', ConfigBase, ConfigBase)
 
 
-class ChatBridgeUniversalBase:
-    def __init__(self, name: str):
-        self.__name = name
-        self._sock: Optional[socket.socket] = None
-        self.logger = ChatBridgeUniversalLogger(self.get_logging_name())
+class CBUBase:
+    def __init__(self, config_path: str, config_class: Type[T]):
+        self.logger = CBULogger(self.get_logger_name())
+        self.config = self.load_config(config_path, config_class)
+        self.__main_thread: Optional[Thread] = None
 
-    def get_name(self) -> str:
-        return self.__name
+    def load_config(self, config_path: str, config_class: Type[T]) -> T:
+        config = config_class.get_default()
+        if not os.path.isfile(config_path):
+            self.logger.warning('Configure file not found!'.format(config_path))
+            with open(config_path, 'w', encoding='utf8') as file:
+                json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
+            self.logger.info('Default example configure generated'.format(config_path))
+            return self.load_config(config_path, config_class)
+        else:
+            with open(config_path, encoding='utf8') as file:
+                config.update_from(json.load(file))
+            with open(config_path, 'w', encoding='utf8') as file:
+                json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
+            return config
 
-    def get_logging_name(self) -> str:
-        return self.get_name()
+    def get_logger_name(self) -> str:
+        pass
 
-    def _set_socket(self, sock: socket.socket):
-        self._sock = sock
+    def get_main_thread_name(self) -> str:
+        pass
+
+    def _start_thread(self, target: Callable, name: str):
+        thread = Thread(target=target, args=(), name=name, daemon=True)
+        thread.start()
+        self.logger.debug('Started thread {}: {}'.format(name, thread))
+        return thread
+
+    def _main_loop(self):
+        pass
+
+    def start(self):
+        def func():
+            self._main_loop()
+        self.__main_thread = self._start_thread(func, self.get_main_thread_name())

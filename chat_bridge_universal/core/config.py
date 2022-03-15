@@ -1,10 +1,16 @@
 import json
 import os
-from typing import List, TypeVar, Generic, Type
+from typing import List, TypeVar, Type, NamedTuple
 
 from mcdreforged.utils.serializer import Serializable
 
-from chat_bridge_universal.core.network.basic import Address
+
+class Address(NamedTuple):
+    hostname: str
+    port: int
+
+    def __str__(self):
+        return '{}:{}'.format(self.hostname, self.port)
 
 
 class ConfigBase(Serializable):
@@ -16,7 +22,7 @@ class ClientMeta(Serializable):
     password: str
 
 
-class ChatBridgeUniversalClientConfig(ConfigBase):
+class CBUClientConfig(ConfigBase):
     name: str = 'MyClientName'
     password: str = 'MyClientPassword'
     server_hostname: str = '127.0.0.1'
@@ -31,7 +37,7 @@ class ChatBridgeUniversalClientConfig(ConfigBase):
         return Address(hostname=self.server_hostname, port=self.server_port)
 
 
-class ChatBridgeUniversalServerConfig(ConfigBase):
+class CBUServerConfig(ConfigBase):
     hostname: str = 'localhost'
     port: int = 30001
     clients: List[ClientMeta] = [
@@ -44,19 +50,3 @@ class ChatBridgeUniversalServerConfig(ConfigBase):
 
 
 T = TypeVar('T', ConfigBase, ConfigBase)
-
-
-def load_config(config_path: str, config_class: Type[T]) -> T:
-    config = config_class.get_default()
-    if not os.path.isfile(config_path):
-        print('Configure file not found!'.format(config_path))
-        with open(config_path, 'w', encoding='utf8') as file:
-            json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
-        print('Default example configure generated'.format(config_path))
-        return load_config(config_path, config_class)
-    else:
-        with open(config_path, encoding='utf8') as file:
-            config.update_from(json.load(file))
-        with open(config_path, 'w', encoding='utf8') as file:
-            json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
-        return config

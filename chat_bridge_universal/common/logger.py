@@ -8,7 +8,7 @@ class ConsoleHandler(StreamHandler):
         super().emit(record)
 
 
-class ChatBridgeUniversalLogger(Logger):
+class CBULogger(Logger):
     LOG_COLORS = {
         'DEBUG': 'blue',
         'INFO': 'green',

@@ -1,80 +1,47 @@
 import socket
-from enum import Enum, unique
-from threading import Thread
-from typing import Iterable, Callable
 
-from chat_bridge_universal.common import constants
-from chat_bridge_universal.core.basic import ChatBridgeUniversalBase
-from chat_bridge_universal.core.config import ChatBridgeUniversalServerConfig, load_config
-from chat_bridge_universal.core.network.basic import Address
+from chat_bridge_universal.core.basic import CBUBase
+from chat_bridge_universal.core.config import CBUServerConfig, Address
 
 
-@unique
-class CBUServerState(Enum):
-    STOPPED = 'cbu.state.stopped'
-    STARTING = 'cbu.state.starting'
-    RUNNING = 'cbu.state.running'
+class CBUServer(CBUBase):
+    config: CBUServerConfig
 
-    def in_state(self, states):
-        if type(states) is type(self):
-            return self is states
-        elif not isinstance(states, Iterable):
-            states = (states,)
-        return self in states
-
-
-class ChatBridgeUniversalServer(ChatBridgeUniversalBase):
     def __init__(self, config_path: str):
-        super().__init__('Server')
-        self.config = load_config(config_path, ChatBridgeUniversalServerConfig)
+        super().__init__(config_path, CBUServerConfig)
         self.__sock = socket.socket()
-        self.state = CBUServerState.STOPPED
 
-    def set_state(self, state: CBUServerState):
-        self.state = state
+    def get_main_thread_name(self) -> str:
+        return 'ServerThread'
 
-    def in_state(self, state):
-        return self.state.in_state(state)
-
-    def is_running(self):
-        return self.state.in_state({CBUServerState.RUNNING})
-
-    def __handle_connection(self, conn, address: Address):
-        pass
-
-    def start(self):
-        self.set_state(CBUServerState.STARTING)
+    def _main_loop(self):
         try:
             self.__sock.bind(self.config.address)
         except socket.error:
-            self.logger.error('Failed to bind {}'.format(self.config.address))
-            self.set_state(CBUServerState.STOPPED)
-            return
+            raise RuntimeError('Failed to bind {}'.format(self.config.address))
 
         try:
             self.__sock.listen(5)
             self.__sock.settimeout(3)
-            self.logger.info('{} server started at {}'.format(constants.NAME, self.config.address))
-            self.logger.info('Waiting for connections...')
-            self.set_state(CBUServerState.RUNNING)
-            connection_id = 0
-            while self.is_running():
+            self.logger.info('Server started at {}'.format(self.config.address))
+            while True:
                 try:
-                    conn, addr = self.__sock.accept()
+                    try:
+                        conn, addr = self.__sock.accept()
+                    except socket.timeout:
+                        continue
+
+                    address = Address(*addr)
+                    self.logger.info('New connection #{} from {}'.format(counter, address))
                 except socket.timeout:
                     continue
-                address = Address(*addr)
-                self.logger.info('New connection #{} from {}'.format(connection_id, address))
-                Thread(
-                    name='Connection#{}'.format(connection_id),
-                    target=self.__handle_connection, args=(conn, address),
-                    daemon=True
-                ).start()
-
         finally:
-            self.stop()
+            self.__stop()
         self.logger.info('bye')
 
-    def stop(self):
-        self.__sock.close()
-        self.set_state(CBUServerState.STOPPED)
+    def __stop(self):
+        pass
+
+
+if __name__ == '__main__':
+    CBUServer('../server_config.json').start()

@@ -1,5 +1,4 @@
-from chat_bridge_universal.core.server import CBUServer
+from chat_bridge_universal.cli import cli_entry
 
 if __name__ == '__main__':
-    server = CBUServer('./server_config.json')
-    server.start()
+    cli_entry.cli()

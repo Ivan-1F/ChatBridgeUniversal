@@ -22,6 +22,9 @@ class CBUServer(CBUBase):
     def get_main_thread_name(self) -> str:
         return 'ServerThread'
 
+    def get_logger_name(self) -> str:
+        return 'Server'
+
     def _main_loop(self):
         self.__sock = socket.socket()
         try:

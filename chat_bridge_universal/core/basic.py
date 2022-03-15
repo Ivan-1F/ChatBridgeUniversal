@@ -1,6 +1,6 @@
 import json
 import os
-from threading import Thread, current_thread
+from threading import Thread, current_thread, RLock
 from typing import TypeVar, Generic, Callable, Optional, cast, Type, List
 
 from chat_bridge_universal.common.logger import CBULogger
@@ -14,6 +14,7 @@ class CBUBase:
         self.logger = CBULogger(self.get_logger_name())
         self.config = self.load_config(config_path, config_class)
         self.__main_thread: Optional[Thread] = None
+        self.__thread_run_lock = RLock()
 
     def load_config(self, config_path: str, config_class: Type[T]) -> T:
         config = config_class.get_default()
@@ -48,6 +49,12 @@ class CBUBase:
     def start(self):
         def func():
             self._main_loop()
+            with self.__thread_run_lock:
+                self.__thread_run = None
+
+        with self.__thread_run_lock:
+            if self.__main_thread is not None:
+                raise RuntimeError('Already running')
         self.__main_thread = self._start_thread(func, self.get_main_thread_name())
 
     def stop(self):
@@ -56,8 +63,8 @@ class CBUBase:
         Need to be called on a non-MainLoop thread
         """
         self.logger.debug('Joining MainLoop thread')
-        # with self.__thread_run_lock:
-        thread = self.__main_thread
+        with self.__thread_run_lock:
+            thread = self.__main_thread
         if thread is not None:
             if thread is not current_thread():
                 thread.join()

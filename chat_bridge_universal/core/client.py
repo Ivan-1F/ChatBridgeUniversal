@@ -24,7 +24,10 @@ class CBUClient(CBUBase):
         try:
             self.__connect()
         except socket.error:
-            raise RuntimeError('Failed to connect to {}'.format(self.config.server_address))
+            self.logger.error('Failed to connect to {}'.format(self.config.server_address))
+            return
+
+        self.logger.info('Connected to {}'.format(self.config.server_address))
 
 
 if __name__ == '__main__':

@@ -31,7 +31,8 @@ class CBUServer(CBUBase):
             self.__sock.bind(self.config.address)
         except socket.error:
             self.__stopped = True
-            raise RuntimeError('Failed to bind {}'.format(self.config.address))
+            self.logger.error('Failed to bind {}'.format(self.config.address))
+            return
         finally:
             self.__stopped = False
             self.__binding_done.set()

@@ -21,6 +21,7 @@ class CBUClient(CBUBase):
         self.__sock.connect(self.config.server_address)
 
     def _main_loop(self):
+        self.__sock = socket.socket()
         try:
             self.__connect()
         except socket.error:

@@ -42,13 +42,14 @@ class CBUServer(CBUBase):
             self.__sock.settimeout(3)
             self.logger.info('Server started at {}'.format(self.config.address))
             while not self.__stopped:
+                counter = 0
                 try:
                     try:
                         conn, addr = self.__sock.accept()
                     except socket.timeout:
                         continue
-
                     address = Address(*addr)
+                    counter += 1
                     self.logger.info('New connection #{} from {}'.format(counter, address))
                 except socket.timeout:
                     continue

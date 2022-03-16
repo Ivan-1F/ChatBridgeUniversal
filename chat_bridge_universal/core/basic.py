@@ -6,12 +6,9 @@ from threading import Thread, current_thread, RLock
 from typing import TypeVar, Callable, Optional, Type, Iterable
 
 from chat_bridge_universal.common.logger import CBULogger
-from chat_bridge_universal.core.config import ConfigBase
 from chat_bridge_universal.core.network import net_util
 from chat_bridge_universal.core.network.cryptor import AESCryptor
 from chat_bridge_universal.core.network.protocal import AbstractPacket
-
-T = TypeVar('T', ConfigBase, ConfigBase)
 
 
 @unique
@@ -54,6 +51,26 @@ class CBUBase:
 
     def get_main_thread_name(self) -> str:
         pass
+
+    def _send_packet(self, packet: AbstractPacket):
+        net_util.send_data(self._sock, self._cryptor, packet)
+
+    T = TypeVar('T', bound=AbstractPacket)
+
+    def _receive_packet(self, packet_type: Type[T]) -> T:
+        data_string = net_util.receive_data(self._sock, self._cryptor, timeout=15)
+        try:
+            data = json.loads(data_string)
+        except ValueError:
+            self.logger.exception('Fail to decode received string: {}'.format(data_string))
+            raise
+
+        try:
+            packet = packet_type.deserialize(data)
+        except Exception:
+            self.logger.exception('Fail to deserialize received json to {}: {}'.format(packet_type, js_dict))
+            raise
+        return packet
 
     def _start_thread(self, target: Callable, name: str):
         thread = Thread(target=target, args=(), name=name, daemon=True)

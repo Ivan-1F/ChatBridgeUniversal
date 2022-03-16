@@ -6,7 +6,7 @@ from typing import cast
 from chat_bridge_universal.core.basic import CBUBase, StateBase
 from chat_bridge_universal.core.config import CBUClientConfig
 from chat_bridge_universal.core.network import net_util
-from chat_bridge_universal.core.network.protocal import AbstractPacket, LoginPacket
+from chat_bridge_universal.core.network.protocal import AbstractPacket, LoginPacket, LoginResultPacket
 
 
 @unique
@@ -41,17 +41,17 @@ class CBUClient(CBUBase):
     def __connect_and_login(self):
         self.__connect()
         self._send_packet(LoginPacket(name=self.config.name, password=self.config.password))
+        result = self._receive_packet(LoginResultPacket)
+        if result.success:
+            self._set_state(CBUClientState.ONLINE)
+            self.logger.info('Logged in to the server')
+        else:
+            self.logger.info('Failed to login to the server')
 
     def __connect(self):
         self._set_state(CBUClientState.CONNECTING)
         self._sock.connect(self.config.server_address)
         self._set_state(CBUClientState.CONNECTED)
-
-    def _send_packet(self, packet: AbstractPacket):
-        if self._is_connected():
-            net_util.send_data(self._sock, self._cryptor, packet)
-        else:
-            self.logger.warning('Trying to send a packet when not connected')
 
     def _main_loop(self):
         self._sock = socket.socket()

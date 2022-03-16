@@ -1,12 +1,23 @@
 import json
 import os
+from enum import Enum, unique
 from threading import Thread, current_thread, RLock
-from typing import TypeVar, Generic, Callable, Optional, cast, Type, List
+from typing import TypeVar, Generic, Callable, Optional, cast, Type, List, Iterable
 
 from chat_bridge_universal.common.logger import CBULogger
 from chat_bridge_universal.core.config import ConfigBase, CBUServerConfig
 
 T = TypeVar('T', ConfigBase, ConfigBase)
+
+
+@unique
+class StateBase(Enum):
+    def in_state(self, states):
+        if type(states) is type(self):
+            return self is states
+        elif not isinstance(states, Iterable):
+            states = (states,)
+        return self in states
 
 
 class CBUBase:
@@ -15,6 +26,7 @@ class CBUBase:
         self.config = self.load_config(config_path, config_class)
         self.__main_thread: Optional[Thread] = None
         self.__thread_run_lock = RLock()
+        self._state: StateBase
 
     def load_config(self, config_path: str, config_class: Type[T]) -> T:
         config = config_class.get_default()
@@ -42,6 +54,12 @@ class CBUBase:
         thread.start()
         self.logger.debug('Started thread {}: {}'.format(name, thread))
         return thread
+
+    def in_state(self, state) -> bool:
+        return self._state.in_state(state)
+
+    def _set_state(self, state):
+        self._state = state
 
     def _main_loop(self):
         pass

@@ -11,7 +11,7 @@ class CliClient(CBUClient):
         self.__prompt_session = PromptSession(completer=completer)
 
     def prompt_loop(self):
-        while not self._stopped:
+        while not self.is_stopped():
             text = self.__prompt_session.prompt('> ')
             self.logger.info('Handling user input: {}'.format(text))
             if text == 'stop':

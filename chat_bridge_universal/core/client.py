@@ -5,6 +5,8 @@ from typing import Optional, cast
 
 from chat_bridge_universal.core.basic import CBUBase, StateBase
 from chat_bridge_universal.core.config import CBUClientConfig
+from chat_bridge_universal.core.network import net_util
+from chat_bridge_universal.core.network.protocal import AbstractPacket, LoginPacket
 
 
 @unique
@@ -34,16 +36,30 @@ class CBUClient(CBUBase):
     def is_stopped(self) -> bool:
         return self.in_state({CBUClientState.STOPPED})
 
+    def _is_connected(self) -> bool:
+        return self.in_state({CBUClientState.CONNECTED, CBUClientState.ONLINE})
+
+    def __connect_and_login(self):
+        self.__connect()
+        self._send_packet(LoginPacket(name=self.config.name, password=self.config.password))
+
     def __connect(self):
         self._set_state(CBUClientState.CONNECTING)
         self.__sock.connect(self.config.server_address)
         self._set_state(CBUClientState.CONNECTED)
 
+    def _send_packet(self, packet: AbstractPacket):
+        if self._is_connected():
+            net_util.send_data(self.__sock, self._cryptor, packet)
+        else:
+            self.logger.warning('Trying to send a packet when not connected')
+        pass
+
     def _main_loop(self):
         self.__sock = socket.socket()
         self._set_state(CBUClientState.STARTING)
         try:
-            self.__connect()
+            self.__connect_and_login()
         except socket.error:
             self._set_state(CBUClientState.STOPPED)
             self.logger.error('Failed to connect to {}'.format(self.config.server_address))

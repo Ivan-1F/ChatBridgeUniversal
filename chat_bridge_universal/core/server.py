@@ -1,5 +1,5 @@
 import socket
-from threading import Event
+from threading import Event, Thread
 from typing import cast, Optional
 
 from prompt_toolkit import PromptSession
@@ -24,6 +24,9 @@ class CBUServer(CBUBase):
 
     def get_logger_name(self) -> str:
         return 'Server'
+
+    def __handle_connection(self, conn: socket, addr: Address):
+        pass
 
     def _main_loop(self):
         self.__sock = socket.socket()
@@ -51,8 +54,11 @@ class CBUServer(CBUBase):
                     address = Address(*addr)
                     counter += 1
                     self.logger.info('New connection #{} from {}'.format(counter, address))
+                    Thread(name='Connection#{}'.format(counter), target=self.__handle_connection, args=(conn, address),
+                           daemon=True).start()
                 except:
-                    pass
+                    if not self.__stopped:
+                        self.logger.exception('Error ticking server')
         finally:
             self.__stop()
         self.logger.info('bye')

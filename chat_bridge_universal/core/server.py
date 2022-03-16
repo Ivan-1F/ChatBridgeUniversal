@@ -7,6 +7,7 @@ from prompt_toolkit.completion import WordCompleter
 
 from chat_bridge_universal.core.basic import CBUBase
 from chat_bridge_universal.core.config import CBUServerConfig, Address
+from chat_bridge_universal.core.network.protocal import LoginPacket
 
 
 class CBUServer(CBUBase):
@@ -25,7 +26,15 @@ class CBUServer(CBUBase):
         return 'Server'
 
     def __handle_connection(self, conn: socket, addr: Address):
-        pass
+        packet = self._receive_packet(LoginPacket)
+        client = list(filter(lambda x: x.name == packet.name, self.config.clients))[0]
+        if client.password == packet.password:
+            self.logger.info('Identification of {} confirmed: {}'.format(addr, client.name))
+        else:
+            self.logger.warning(
+                'Wrong password during login for client {}: expected {} but received {}'.format(client.name,
+                                                                                                client.password,
+                                                                                                packet.password))
 
     def _main_loop(self):
         self._sock = socket.socket()

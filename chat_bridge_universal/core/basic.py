@@ -6,6 +6,7 @@ from threading import Thread, current_thread, RLock
 from typing import TypeVar, Callable, Optional, Type, Iterable
 
 from chat_bridge_universal.common.logger import CBULogger
+from chat_bridge_universal.core.config import ConfigBase
 from chat_bridge_universal.core.network import net_util
 from chat_bridge_universal.core.network.cryptor import AESCryptor
 from chat_bridge_universal.core.network.protocal import AbstractPacket
@@ -19,6 +20,9 @@ class StateBase(Enum):
         elif not isinstance(states, Iterable):
             states = (states,)
         return self in states
+
+
+T = TypeVar('T', bound=ConfigBase)
 
 
 class CBUBase:
@@ -55,9 +59,9 @@ class CBUBase:
     def _send_packet(self, packet: AbstractPacket):
         net_util.send_data(self._sock, self._cryptor, packet)
 
-    T = TypeVar('T', bound=AbstractPacket)
+    PT = TypeVar('PT', bound=AbstractPacket)
 
-    def _receive_packet(self, packet_type: Type[T]) -> T:
+    def _receive_packet(self, packet_type: Type[PT]) -> PT:
         data_string = net_util.receive_data(self._sock, self._cryptor, timeout=15)
         try:
             data = json.loads(data_string)
@@ -68,7 +72,7 @@ class CBUBase:
         try:
             packet = packet_type.deserialize(data)
         except Exception:
-            self.logger.exception('Fail to deserialize received json to {}: {}'.format(packet_type, js_dict))
+            self.logger.exception('Fail to deserialize received json to {}: {}'.format(packet_type, data))
             raise
         return packet
 

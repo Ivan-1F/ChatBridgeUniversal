@@ -5,7 +5,6 @@ from typing import cast
 
 from chat_bridge_universal.core.basic import CBUBase, StateBase
 from chat_bridge_universal.core.config import CBUClientConfig
-from chat_bridge_universal.core.network import net_util
 from chat_bridge_universal.core.network.protocal import AbstractPacket, LoginPacket, LoginResultPacket
 
 
@@ -40,7 +39,9 @@ class CBUClient(CBUBase):
 
     def __connect_and_login(self):
         self.__connect()
+        self.logger.debug('Sending login packet')
         self._send_packet(LoginPacket(name=self.config.name, password=self.config.password))
+        self.logger.debug('Waiting for login result')
         result = self._receive_packet(LoginResultPacket)
         if result.success:
             self._set_state(CBUClientState.ONLINE)
@@ -74,6 +75,7 @@ class CBUClient(CBUBase):
         self.__connection_done.clear()
         super().start()
         self.__connection_done.wait()
+        self.logger.debug('Started client')
 
     def stop(self):
         self.__stop()

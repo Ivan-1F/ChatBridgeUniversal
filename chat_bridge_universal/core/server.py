@@ -8,7 +8,7 @@ from prompt_toolkit.completion import WordCompleter
 
 from chat_bridge_universal.core.basic import CBUBase, StateBase
 from chat_bridge_universal.core.config import CBUServerConfig, Address
-from chat_bridge_universal.core.network.protocal import LoginPacket
+from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket
 
 
 class CBUServerState(StateBase):
@@ -38,11 +38,12 @@ class CBUServer(CBUBase):
     def is_stopped(self) -> bool:
         return self.in_state(CBUServerState.STOPPED)
 
-    def __handle_connection(self, conn: socket, addr: Address):
-        packet = self._receive_packet(LoginPacket)
+    def __handle_connection(self, conn: socket.socket, addr: Address):
+        packet = self._receive_packet(LoginPacket, sock=conn)
         client = list(filter(lambda x: x.name == packet.name, self.config.clients))[0]
         if client.password == packet.password:
             self.logger.info('Identification of {} confirmed: {}'.format(addr, client.name))
+            self._send_packet(LoginResultPacket(success=True), sock=conn)
         else:
             self.logger.warning(
                 'Wrong password during login for client {}: expected {} but received {}'.format(client.name,

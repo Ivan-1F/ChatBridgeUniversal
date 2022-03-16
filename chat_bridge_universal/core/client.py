@@ -42,7 +42,6 @@ class CBUClient(CBUBase):
         self.__connect()
         self.logger.debug('Sending login packet')
         self._send_packet(LoginPacket(name=self.config.name, password=self.config.password))
-        self.logger.debug('Waiting for login result')
         result = self._receive_packet(LoginResultPacket)
         if result.success:
             self._set_state(CBUClientState.ONLINE)

@@ -2,8 +2,9 @@ import json
 import os
 import socket
 from enum import Enum, unique
+from functools import singledispatch
 from threading import Thread, current_thread, RLock
-from typing import TypeVar, Callable, Optional, Type, Iterable
+from typing import TypeVar, Callable, Optional, Type, Iterable, overload
 
 from chat_bridge_universal.common.logger import CBULogger
 from chat_bridge_universal.core.config import ConfigBase
@@ -59,13 +60,17 @@ class CBUBase:
     def get_main_thread_name(self) -> str:
         pass
 
-    def _send_packet(self, packet: AbstractPacket):
-        net_util.send_data(self._sock, self._cryptor, packet)
+    def _send_packet(self, packet: AbstractPacket, sock: socket.socket = None):
+        if sock is None:
+            sock = self._sock
+        net_util.send_data(sock, self._cryptor, packet)
 
     PT = TypeVar('PT', bound=AbstractPacket)
 
-    def _receive_packet(self, packet_type: Type[PT]) -> PT:
-        data_string = net_util.receive_data(self._sock, self._cryptor, timeout=15)
+    def _receive_packet(self, packet_type: Type[PT], sock: socket.socket = None) -> PT:
+        if sock is None:
+            sock = self._sock
+        data_string = net_util.receive_data(sock, self._cryptor, timeout=15)
         try:
             data = json.loads(data_string)
         except ValueError:

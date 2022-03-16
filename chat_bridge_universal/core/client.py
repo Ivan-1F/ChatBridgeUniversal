@@ -1,7 +1,7 @@
 import socket
 from enum import unique, auto
 from threading import Event
-from typing import Optional, cast
+from typing import cast
 
 from chat_bridge_universal.core.basic import CBUBase, StateBase
 from chat_bridge_universal.core.config import CBUClientConfig
@@ -23,7 +23,6 @@ class CBUClient(CBUBase):
     def __init__(self, config_path: str):
         super().__init__(config_path, CBUClientConfig)
         self.config = cast(CBUClientConfig, self.config)
-        self.__sock: Optional[socket.socket] = None
         self.__connection_done = Event()
         self.__state: CBUClientState = CBUClientState.STOPPED
 
@@ -45,17 +44,17 @@ class CBUClient(CBUBase):
 
     def __connect(self):
         self._set_state(CBUClientState.CONNECTING)
-        self.__sock.connect(self.config.server_address)
+        self._sock.connect(self.config.server_address)
         self._set_state(CBUClientState.CONNECTED)
 
     def _send_packet(self, packet: AbstractPacket):
         if self._is_connected():
-            net_util.send_data(self.__sock, self._cryptor, packet)
+            net_util.send_data(self._sock, self._cryptor, packet)
         else:
             self.logger.warning('Trying to send a packet when not connected')
 
     def _main_loop(self):
-        self.__sock = socket.socket()
+        self._sock = socket.socket()
         self._set_state(CBUClientState.STARTING)
         try:
             self.__connect_and_login()
@@ -82,9 +81,9 @@ class CBUClient(CBUBase):
 
     def __stop(self):
         self._set_state(CBUClientState.STOPPED)
-        if self.__sock is not None:
-            self.__sock.close()
-            self.__sock = None
+        if self._sock is not None:
+            self._sock.close()
+            self._sock = None
             self.logger.info('Socket closed')
 
 

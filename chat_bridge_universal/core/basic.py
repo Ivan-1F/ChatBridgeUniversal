@@ -1,12 +1,15 @@
 import json
 import os
+import socket
 from enum import Enum, unique
 from threading import Thread, current_thread, RLock
 from typing import TypeVar, Callable, Optional, Type, Iterable
 
 from chat_bridge_universal.common.logger import CBULogger
 from chat_bridge_universal.core.config import ConfigBase
+from chat_bridge_universal.core.network import net_util
 from chat_bridge_universal.core.network.cryptor import AESCryptor
+from chat_bridge_universal.core.network.protocal import AbstractPacket
 
 T = TypeVar('T', ConfigBase, ConfigBase)
 
@@ -27,6 +30,7 @@ class CBUBase:
         self.config = self.load_config(config_path, config_class)
         self.__main_thread: Optional[Thread] = None
         self.__thread_run_lock = RLock()
+        self._sock: Optional[socket.socket] = None
         self._state: StateBase
         self._cryptor = AESCryptor(self.config.aes_key)
 

@@ -1,6 +1,6 @@
 import socket
 from threading import Event, Thread
-from typing import cast, Optional
+from typing import cast
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
@@ -13,7 +13,6 @@ class CBUServer(CBUBase):
     def __init__(self, config_path: str):
         super().__init__(config_path, CBUServerConfig)
         self.config = cast(CBUServerConfig, self.config)
-        self.__sock: Optional[socket.socket] = None
         completer = WordCompleter(['stop', 'send', 'list', 'help'])
         self.__prompt_session = PromptSession(completer=completer)
         self.__binding_done = Event()
@@ -29,9 +28,9 @@ class CBUServer(CBUBase):
         pass
 
     def _main_loop(self):
-        self.__sock = socket.socket()
+        self._sock = socket.socket()
         try:
-            self.__sock.bind(self.config.address)
+            self._sock.bind(self.config.address)
         except socket.error:
             self.__stopped = True
             self.logger.error('Failed to bind {}'.format(self.config.address))
@@ -41,14 +40,14 @@ class CBUServer(CBUBase):
             self.__binding_done.set()
 
         try:
-            self.__sock.listen(5)
-            self.__sock.settimeout(3)
+            self._sock.listen(5)
+            self._sock.settimeout(3)
             self.logger.info('Server started at {}'.format(self.config.address))
             while not self.__stopped:
                 counter = 0
                 try:
                     try:
-                        conn, addr = self.__sock.accept()
+                        conn, addr = self._sock.accept()
                     except socket.timeout:
                         continue
                     address = Address(*addr)
@@ -82,9 +81,9 @@ class CBUServer(CBUBase):
 
     def __stop(self):
         self.__stopped = True
-        if self.__sock is not None:
-            self.__sock.close()
-            self.__sock = None
+        if self._sock is not None:
+            self._sock.close()
+            self._sock = None
             self.logger.info('Socket closed')
 
 

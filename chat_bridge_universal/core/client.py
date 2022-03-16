@@ -38,6 +38,7 @@ class CBUClient(CBUBase):
         return self.in_state({CBUClientState.CONNECTED, CBUClientState.ONLINE})
 
     def __connect_and_login(self):
+        self.assert_state(CBUClientState.STARTING)
         self.__connect()
         self.logger.debug('Sending login packet')
         self._send_packet(LoginPacket(name=self.config.name, password=self.config.password))

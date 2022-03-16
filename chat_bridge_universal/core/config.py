@@ -1,6 +1,4 @@
-import json
-import os
-from typing import List, TypeVar, Type, NamedTuple
+from typing import List, TypeVar, NamedTuple
 
 from mcdreforged.utils.serializer import Serializable
 

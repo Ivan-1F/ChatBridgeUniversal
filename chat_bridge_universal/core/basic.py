@@ -2,10 +2,10 @@ import json
 import os
 from enum import Enum, unique
 from threading import Thread, current_thread, RLock
-from typing import TypeVar, Generic, Callable, Optional, cast, Type, List, Iterable
+from typing import TypeVar, Callable, Optional, Type, Iterable
 
 from chat_bridge_universal.common.logger import CBULogger
-from chat_bridge_universal.core.config import ConfigBase, CBUServerConfig
+from chat_bridge_universal.core.config import ConfigBase
 
 T = TypeVar('T', ConfigBase, ConfigBase)
 

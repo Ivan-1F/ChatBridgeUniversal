@@ -26,6 +26,9 @@ T = TypeVar('T', bound=ConfigBase)
 
 
 class CBUBase:
+    """
+    Base class for all the ChatBridgeUniversal components
+    """
     def __init__(self, config_path: str, config_class: Type[T]):
         self.logger = CBULogger(self.get_logger_name())
         self.config = self.load_config(config_path, config_class)
@@ -92,6 +95,9 @@ class CBUBase:
         pass
 
     def start(self):
+        """
+        Start the client/server mainloop in a new thread (self.__main_thread)
+        """
         def func():
             self._main_loop()
             with self.__thread_run_lock:

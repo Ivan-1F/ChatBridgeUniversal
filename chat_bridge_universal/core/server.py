@@ -36,17 +36,23 @@ class CBUServer(CBUBase):
                                                                                                 client.password,
                                                                                                 packet.password))
 
-    def _main_loop(self):
+    def __bind(self):
         self._sock = socket.socket()
         try:
             self._sock.bind(self.config.address)
         except socket.error:
             self.__stopped = True
             self.logger.error('Failed to bind {}'.format(self.config.address))
-            return
+            raise
         finally:
             self.__stopped = False
             self.__binding_done.set()
+
+    def _main_loop(self):
+        try:
+            self.__bind()
+        except socket.error:
+            return
 
         try:
             self._sock.listen(5)
@@ -73,6 +79,7 @@ class CBUServer(CBUBase):
 
     def start(self):
         self.__binding_done.clear()
+        # Non-block, mainloop started in ServerThread
         super().start()
         self.__binding_done.wait()
         self.prompt_loop()
@@ -89,6 +96,9 @@ class CBUServer(CBUBase):
         super().stop()
 
     def __stop(self):
+        """
+        Internal cleanup
+        """
         self.__stopped = True
         if self._sock is not None:
             self._sock.close()

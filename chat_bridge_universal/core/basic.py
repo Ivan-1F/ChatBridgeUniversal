@@ -6,6 +6,7 @@ from typing import TypeVar, Callable, Optional, Type, Iterable
 
 from chat_bridge_universal.common.logger import CBULogger
 from chat_bridge_universal.core.config import ConfigBase
+from chat_bridge_universal.core.network.cryptor import AESCryptor
 
 T = TypeVar('T', ConfigBase, ConfigBase)
 
@@ -27,6 +28,7 @@ class CBUBase:
         self.__main_thread: Optional[Thread] = None
         self.__thread_run_lock = RLock()
         self._state: StateBase
+        self._cryptor = AESCryptor(self.config.aes_key)
 
     def load_config(self, config_path: str, config_class: Type[T]) -> T:
         config = config_class.get_default()

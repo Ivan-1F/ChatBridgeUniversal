@@ -53,7 +53,6 @@ class CBUClient(CBUBase):
             net_util.send_data(self.__sock, self._cryptor, packet)
         else:
             self.logger.warning('Trying to send a packet when not connected')
-        pass
 
     def _main_loop(self):
         self.__sock = socket.socket()

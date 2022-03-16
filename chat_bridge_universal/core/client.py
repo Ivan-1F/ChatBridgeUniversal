@@ -5,7 +5,7 @@ from typing import cast
 
 from chat_bridge_universal.core.basic import CBUBase, StateBase
 from chat_bridge_universal.core.config import CBUClientConfig
-from chat_bridge_universal.core.network.protocal import AbstractPacket, LoginPacket, LoginResultPacket
+from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket
 
 
 @unique

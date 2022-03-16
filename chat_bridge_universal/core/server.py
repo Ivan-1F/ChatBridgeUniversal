@@ -1,13 +1,20 @@
 import socket
+from enum import auto
 from threading import Event, Thread
 from typing import cast
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 
-from chat_bridge_universal.core.basic import CBUBase
+from chat_bridge_universal.core.basic import CBUBase, StateBase
 from chat_bridge_universal.core.config import CBUServerConfig, Address
 from chat_bridge_universal.core.network.protocal import LoginPacket
+
+
+class CBUServerState(StateBase):
+    STOPPED = auto()  # stopped
+    STARTING = auto()  # binding socket, setup
+    RUNNING = auto()  # running
 
 
 class CBUServer(CBUBase):
@@ -17,13 +24,19 @@ class CBUServer(CBUBase):
         completer = WordCompleter(['stop', 'send', 'list', 'help'])
         self.__prompt_session = PromptSession(completer=completer)
         self.__binding_done = Event()
-        self.__stopped = True
+        self._state = CBUServerState.STOPPED
 
     def get_main_thread_name(self) -> str:
         return 'ServerThread'
 
     def get_logger_name(self) -> str:
         return 'Server'
+
+    def is_running(self) -> bool:
+        return self.in_state(CBUServerState.RUNNING)
+
+    def is_stopped(self) -> bool:
+        return self.in_state(CBUServerState.STOPPED)
 
     def __handle_connection(self, conn: socket, addr: Address):
         packet = self._receive_packet(LoginPacket)
@@ -41,24 +54,26 @@ class CBUServer(CBUBase):
         try:
             self._sock.bind(self.config.address)
         except socket.error:
-            self.__stopped = True
             self.logger.error('Failed to bind {}'.format(self.config.address))
             raise
         finally:
-            self.__stopped = False
             self.__binding_done.set()
 
     def _main_loop(self):
+        self._state = CBUServerState.STARTING
         try:
             self.__bind()
         except socket.error:
+            self.__stop()
             return
 
         try:
             self._sock.listen(5)
             self._sock.settimeout(3)
             self.logger.info('Server started at {}'.format(self.config.address))
-            while not self.__stopped:
+            self._set_state(CBUServerState.RUNNING)
+
+            while self.is_running():
                 counter = 0
                 try:
                     try:
@@ -71,7 +86,7 @@ class CBUServer(CBUBase):
                     Thread(name='Connection#{}'.format(counter), target=self.__handle_connection, args=(conn, address),
                            daemon=True).start()
                 except:
-                    if not self.__stopped:
+                    if not self.is_running():
                         self.logger.exception('Error ticking server')
         finally:
             self.__stop()
@@ -85,7 +100,7 @@ class CBUServer(CBUBase):
         self.prompt_loop()
 
     def prompt_loop(self):
-        while not self.__stopped:
+        while not self.is_stopped():
             text = self.__prompt_session.prompt('> ')
             self.logger.info('Handling user input: {}'.format(text))
             if text == 'stop':
@@ -99,7 +114,7 @@ class CBUServer(CBUBase):
         """
         Internal cleanup
         """
-        self.__stopped = True
+        self._set_state(CBUServerState.STOPPED)
         if self._sock is not None:
             self._sock.close()
             self._sock = None

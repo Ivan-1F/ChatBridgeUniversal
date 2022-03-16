@@ -91,6 +91,10 @@ class CBUBase:
     def _set_state(self, state):
         self._state = state
 
+    def assert_state(self, state):
+        if not self.in_state(state):
+            raise AssertionError('Excepted state {} but {} found'.format(state, self._state))
+
     def _main_loop(self):
         pass
 

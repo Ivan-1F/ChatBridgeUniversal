@@ -13,7 +13,7 @@ class MCDRClientConfig(CBUClientConfig):
     pass
 
 
-class MCDRClient(CBUClient):
+class CBUMCDRClient(CBUClient):
     def __init__(self, config: MCDRClientConfig, server: ServerInterface):
         super().__init__(config)
         self.config = cast(MCDRClientConfig, self.config)

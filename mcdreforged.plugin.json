@@ -1,6 +1,6 @@
 {
     "id": "chat_bridge_universal",
-    "version": "2.2.0",
+    "version": "1.0.0",
     "name": "ChatBridgeUniversal",
     "description": {
 		"en_us": "Broadcast chats between Minecraft servers and more",

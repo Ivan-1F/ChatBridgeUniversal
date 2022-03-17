@@ -129,3 +129,9 @@ class CBUClient(CBUBase):
             self._sock.close()
             self._sock = None
             self.logger.info('Socket closed')
+
+    def restart(self):
+        self.logger.info('Restarting client')
+        if not self.is_stopped():
+            self.stop()
+        self.start()

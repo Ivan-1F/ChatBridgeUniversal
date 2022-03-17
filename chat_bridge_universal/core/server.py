@@ -10,7 +10,8 @@ from chat_bridge_universal.core.basic import StateBase, CBUBase, Configurable
 from chat_bridge_universal.core.config import CBUServerConfig, Address, ClientMeta
 from chat_bridge_universal.core.network import net_util
 from chat_bridge_universal.core.network.cryptor import AESCryptor
-from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket, ChatPacket, AbstractPacket
+from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket, ChatPacket, AbstractPacket, \
+    ChatPayload
 
 
 class CBUServerState(StateBase):
@@ -67,6 +68,8 @@ class CBUServer(CBUBase, Configurable):
             self.__binding_done.set()
 
     def process_packet(self, packet: ChatPacket):
+        self.logger.debug('Received chat packet from {}: {}'.format(packet.sender, ChatPayload.deserialize(
+            packet.payload).formatted_str))
         for client in self.__clients.values():
             if client.is_connected():
                 client.send_packet_invoker(packet)

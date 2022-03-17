@@ -1,12 +1,12 @@
 import socket
 from enum import auto
 from threading import Event, Thread
-from typing import cast, Dict
+from typing import cast, Dict, Optional
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 
-from chat_bridge_universal.core.basic import StateBase, CBUBaseConfigured
+from chat_bridge_universal.core.basic import StateBase, CBUBaseConfigured, CBUBase
 from chat_bridge_universal.core.config import CBUServerConfig, Address, ClientMeta
 from chat_bridge_universal.core.network import net_util
 from chat_bridge_universal.core.network.cryptor import AESCryptor
@@ -127,13 +127,16 @@ class CBUServer(CBUBaseConfigured):
             self.logger.info('Socket closed')
 
 
-class ClientConnection:
+class ClientConnection(CBUBase):
     def __init__(self, meta: ClientMeta, cryptor: AESCryptor):
-        self._cryptor = cryptor
+        super().__init__(cryptor)
         self.meta = meta
+        self.__server_address: Optional[Address] = None
 
     def open_connection(self, conn: socket.socket, address: Address):
-        net_util.send_packet(conn, self._cryptor, LoginResultPacket(success=True))
+        self._sock = conn
+        self.__server_address = address
+        self._send_packet(LoginResultPacket(success=True))
 
 
 if __name__ == '__main__':

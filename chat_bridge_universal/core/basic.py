@@ -3,7 +3,7 @@ import os
 import socket
 from enum import Enum, unique
 from threading import Thread, current_thread, RLock
-from typing import TypeVar, Callable, Optional, Type, Iterable, overload
+from typing import TypeVar, Callable, Optional, Type, Iterable, overload, Union
 
 from chat_bridge_universal.common.logger import CBULogger
 from chat_bridge_universal.core.config import ConfigBase
@@ -29,13 +29,16 @@ class CBUBase:
     """
     Base class for all the ChatBridgeUniversal components
     """
-    def __init__(self, aes_key: str):
+    def __init__(self, aes: Union[str, AESCryptor]):
         self.logger = CBULogger(self.get_logger_name())
         self.__main_thread: Optional[Thread] = None
         self.__thread_run_lock = RLock()
         self._sock: Optional[socket.socket] = None
         self._state: StateBase
-        self._cryptor = AESCryptor(aes_key)
+        if isinstance(aes, AESCryptor):
+            self._cryptor = aes
+        else:
+            self._cryptor = AESCryptor(aes)
 
     def get_logger_name(self) -> str:
         pass

@@ -3,7 +3,7 @@ from enum import unique, auto
 from threading import Event
 from typing import cast
 
-from chat_bridge_universal.core.basic import CBUBase, StateBase
+from chat_bridge_universal.core.basic import StateBase, CBUBaseConfigured
 from chat_bridge_universal.core.config import CBUClientConfig
 from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket
 
@@ -18,7 +18,7 @@ class CBUClientState(StateBase):
     STOPPED = auto()  # stopped
 
 
-class CBUClient(CBUBase):
+class CBUClient(CBUBaseConfigured):
     def __init__(self, config_path: str):
         super().__init__(config_path, CBUClientConfig)
         self.config = cast(CBUClientConfig, self.config)

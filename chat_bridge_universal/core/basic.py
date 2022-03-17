@@ -2,7 +2,6 @@ import json
 import os
 import socket
 from enum import Enum, unique
-from functools import singledispatch
 from threading import Thread, current_thread, RLock
 from typing import TypeVar, Callable, Optional, Type, Iterable, overload
 
@@ -30,29 +29,13 @@ class CBUBase:
     """
     Base class for all the ChatBridgeUniversal components
     """
-    def __init__(self, config_path: str, config_class: Type[T]):
+    def __init__(self, aes_key: str):
         self.logger = CBULogger(self.get_logger_name())
-        self.config = self.load_config(config_path, config_class)
         self.__main_thread: Optional[Thread] = None
         self.__thread_run_lock = RLock()
         self._sock: Optional[socket.socket] = None
         self._state: StateBase
-        self._cryptor = AESCryptor(self.config.aes_key)
-
-    def load_config(self, config_path: str, config_class: Type[T]) -> T:
-        config = config_class.get_default()
-        if not os.path.isfile(config_path):
-            self.logger.warning('Configure file not found!'.format(config_path))
-            with open(config_path, 'w', encoding='utf8') as file:
-                json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
-            self.logger.info('Default example configure generated'.format(config_path))
-            return self.load_config(config_path, config_class)
-        else:
-            with open(config_path, encoding='utf8') as file:
-                config.update_from(json.load(file))
-            with open(config_path, 'w', encoding='utf8') as file:
-                json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
-            return config
+        self._cryptor = AESCryptor(aes_key)
 
     def get_logger_name(self) -> str:
         pass
@@ -120,3 +103,24 @@ class CBUBase:
             else:
                 self.logger.warning('Joining current thread {}'.format(thread))
         self.logger.debug('Joined MainLoop thread')
+
+
+class CBUBaseConfigured(CBUBase):
+    def __init__(self, config_path: str, config_class: Type[T]):
+        self.config = self.load_config(config_path, config_class)
+        super().__init__(self.config.aes_key)
+
+    def load_config(self, config_path: str, config_class: Type[T]) -> T:
+        config = config_class.get_default()
+        if not os.path.isfile(config_path):
+            self.logger.warning('Configure file not found!'.format(config_path))
+            with open(config_path, 'w', encoding='utf8') as file:
+                json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
+            self.logger.info('Default example configure generated'.format(config_path))
+            return self.load_config(config_path, config_class)
+        else:
+            with open(config_path, encoding='utf8') as file:
+                config.update_from(json.load(file))
+            with open(config_path, 'w', encoding='utf8') as file:
+                json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
+            return config

@@ -1,7 +1,7 @@
 import socket
 from enum import unique, auto
 from threading import Event
-from typing import cast, Union
+from typing import cast
 
 from chat_bridge_universal.core.basic import StateBase, CBUBaseConfigured
 from chat_bridge_universal.core.config import CBUClientConfig

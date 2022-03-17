@@ -29,6 +29,7 @@ class CBUBase:
     """
     Base class for all the ChatBridgeUniversal components
     """
+
     def __init__(self, aes: Union[str, AESCryptor]):
         self.logger = CBULogger(self.get_logger_name())
         self.__main_thread: Optional[Thread] = None
@@ -78,6 +79,7 @@ class CBUBase:
         """
         Start the client/server mainloop in a new thread (self.__main_thread)
         """
+
         def func():
             self._main_loop()
             with self.__thread_run_lock:

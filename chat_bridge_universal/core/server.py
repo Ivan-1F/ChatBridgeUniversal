@@ -74,7 +74,8 @@ class CBUServer(CBUBase):
         self.logger.debug('Received chat packet from {}: {}'.format(packet.sender, ChatPayload.deserialize(
             packet.payload).formatted_str))
         for connection in self.__get_connected_connections():
-            connection.send_packet_invoker(packet)
+            if connection.meta.name != packet.sender:
+                connection.send_packet_invoker(packet)
 
     def _main_loop(self):
         self._state = CBUServerState.STARTING

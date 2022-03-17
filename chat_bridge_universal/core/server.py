@@ -44,7 +44,7 @@ class CBUServer(CBUBase):
         return self.in_state(CBUServerState.STOPPED)
 
     def __handle_connection(self, conn: socket.socket, addr: Address):
-        packet = self._receive_packet(LoginPacket, sock=conn)
+        packet = net_util.receive_packet(conn, self._cryptor, LoginPacket, timeout=15)
         client = self.__clients.get(packet.name)
         if client.meta.password == packet.password:
             self.logger.info('Identification of {} confirmed: {}'.format(addr, client.meta.name))

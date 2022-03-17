@@ -8,6 +8,8 @@ __all__ = [
 	'EmptyContent',
 ]
 
+from typing import TypeVar, Type
+
 from chat_bridge_universal.core.network.cryptor import AESCryptor
 from chat_bridge_universal.core.network.protocal import AbstractPacket
 
@@ -36,3 +38,23 @@ def receive_data(sock: socket.socket, cryptor: AESCryptor, *, timeout: float) ->
 		encrypted_data += buf
 		remaining_data_length -= len(buf)
 	return cryptor.decrypt(encrypted_data)
+
+
+T = TypeVar('T', bound=AbstractPacket)
+
+
+def receive_packet(sock: socket.socket, cryptor: AESCryptor, packet_type: Type[T], *, timeout: float) -> T:
+	if sock is None:
+		sock = sock
+	data_string = receive_data(sock, cryptor, timeout=timeout)
+	try:
+		data = json.loads(data_string)
+	except ValueError:
+		self.logger.exception('Fail to decode received string: {}'.format(data_string))
+		raise
+
+	try:
+		packet = packet_type.deserialize(data)
+	except Exception:
+		raise('Fail to deserialize received json to {}: {}'.format(packet_type, data))
+	return packet

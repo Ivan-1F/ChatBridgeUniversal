@@ -67,12 +67,14 @@ class CBUServer(CBUBase, Configurable):
         finally:
             self.__binding_done.set()
 
+    def __get_connected_connections(self):
+        return list(filter(lambda x: x.is_connected(), self.__connections.values()))
+
     def process_packet(self, packet: ChatPacket):
         self.logger.debug('Received chat packet from {}: {}'.format(packet.sender, ChatPayload.deserialize(
             packet.payload).formatted_str))
-        for connection in self.__connections.values():
-            if connection.is_connected():
-                connection.send_packet_invoker(packet)
+        for connection in self.__get_connected_connections():
+            connection.send_packet_invoker(packet)
 
     def _main_loop(self):
         self._state = CBUServerState.STARTING

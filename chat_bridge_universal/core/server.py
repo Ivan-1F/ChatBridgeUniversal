@@ -29,9 +29,9 @@ class CBUServer(CBUBase, Configurable):
         self.__prompt_session = PromptSession(completer=completer)
         self.__binding_done = Event()
         self._state = CBUServerState.STOPPED
-        self.__clients: Dict[str, ClientConnection] = {}
-        for client in self.config.clients:
-            self.__clients[client.name] = ClientConnection(client, self._cryptor, self)
+        self.__connections: Dict[str, ClientConnection] = {}
+        for connection in self.config.clients:
+            self.__connections[connection.name] = ClientConnection(connection, self._cryptor, self)
 
     def get_main_thread_name(self) -> str:
         return 'ServerThread'
@@ -47,14 +47,14 @@ class CBUServer(CBUBase, Configurable):
 
     def __handle_connection(self, conn: socket.socket, addr: Address):
         packet = net_util.receive_packet(conn, self._cryptor, LoginPacket, timeout=15)
-        client = self.__clients.get(packet.name)
-        if client.meta.password == packet.password:
-            self.logger.info('Identification of {} confirmed: {}'.format(addr, client.meta.name))
-            client.open_connection(conn, addr)
+        connection = self.__connections.get(packet.name)
+        if connection.meta.password == packet.password:
+            self.logger.info('Identification of {} confirmed: {}'.format(addr, connection.meta.name))
+            connection.open_connection(conn, addr)
         else:
             self.logger.warning(
-                'Wrong password during login for client {}: expected {} but received {}'.format(client.meta.name,
-                                                                                                client.meta.password,
+                'Wrong password during login for client {}: expected {} but received {}'.format(connection.meta.name,
+                                                                                                connection.meta.password,
                                                                                                 packet.password))
 
     def __bind(self):
@@ -70,9 +70,9 @@ class CBUServer(CBUBase, Configurable):
     def process_packet(self, packet: ChatPacket):
         self.logger.debug('Received chat packet from {}: {}'.format(packet.sender, ChatPayload.deserialize(
             packet.payload).formatted_str))
-        for client in self.__clients.values():
-            if client.is_connected():
-                client.send_packet_invoker(packet)
+        for connection in self.__connections.values():
+            if connection.is_connected():
+                connection.send_packet_invoker(packet)
 
     def _main_loop(self):
         self._state = CBUServerState.STARTING
@@ -121,7 +121,7 @@ class CBUServer(CBUBase, Configurable):
             if text == 'stop':
                 self.stop()
             if text == 'sendall':
-                for connection in self.__clients.values():
+                for connection in self.__connections.values():
                     connection._send_packet(ChatPacket(sender='CBUServer', receivers=[],
                                                        payload={'author': 'Ivan1F', 'message': 'Hello CBU!'}))
 

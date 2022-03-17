@@ -50,8 +50,7 @@ def receive_packet(sock: socket.socket, cryptor: AESCryptor, packet_type: Type[T
 	try:
 		data = json.loads(data_string)
 	except ValueError:
-		self.logger.exception('Fail to decode received string: {}'.format(data_string))
-		raise
+		raise('Fail to decode received string: {}'.format(data_string))
 
 	try:
 		packet = packet_type.deserialize(data)

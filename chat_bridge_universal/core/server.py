@@ -68,7 +68,7 @@ class CBUServer(CBUBase, Configurable):
 
     def process_packet(self, packet: ChatPacket):
         for client in self.__clients.values():
-            if client:
+            if client.is_connected():
                 client.send_packet_invoker(packet)
 
     def _main_loop(self):
@@ -176,6 +176,20 @@ class ClientConnection(CBUBase):
                 break
         self.stop()
         self.logger.info('bye')
+
+    def is_connected(self):
+        return self._sock is not None
+
+    def stop(self):
+        self.__stop()
+        super().stop()
+
+    def __stop(self):
+        if self._sock is not None:
+            self._sock.close()
+            self._sock = None
+            self.logger.info('Socket closed')
+        self.__server_address = None
 
     def send_packet_invoker(self, packet: AbstractPacket):
         self._send_packet(packet)

@@ -6,7 +6,7 @@ from typing import cast, Dict, Optional
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 
-from chat_bridge_universal.core.basic import StateBase, CBUBaseConfigured, CBUBase
+from chat_bridge_universal.core.basic import StateBase, CBUBase, Configurable
 from chat_bridge_universal.core.config import CBUServerConfig, Address, ClientMeta
 from chat_bridge_universal.core.network import net_util
 from chat_bridge_universal.core.network.cryptor import AESCryptor
@@ -19,9 +19,10 @@ class CBUServerState(StateBase):
     RUNNING = auto()  # running
 
 
-class CBUServer(CBUBaseConfigured):
+class CBUServer(CBUBase, Configurable):
     def __init__(self, config_path: str):
-        super().__init__(config_path, CBUServerConfig)
+        Configurable.__init__(self, config_path, CBUServerConfig)
+        CBUBase.__init__(self, self.config.aes_key)
         self.config = cast(CBUServerConfig, self.config)
         completer = WordCompleter(['stop', 'send', 'list', 'help'])
         self.__prompt_session = PromptSession(completer=completer)

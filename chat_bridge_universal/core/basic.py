@@ -106,18 +106,17 @@ class CBUBase:
         self.logger.debug('Joined MainLoop thread')
 
 
-class CBUBaseConfigured(CBUBase):
+class Configurable:
     def __init__(self, config_path: str, config_class: Type[T]):
         self.config = self.load_config(config_path, config_class)
-        super().__init__(self.config.aes_key)
 
     def load_config(self, config_path: str, config_class: Type[T]) -> T:
         config = config_class.get_default()
         if not os.path.isfile(config_path):
-            self.logger.warning('Configure file not found!'.format(config_path))
+            self.get_logger().warning('Configure file not found!'.format(config_path))
             with open(config_path, 'w', encoding='utf8') as file:
                 json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
-            self.logger.info('Default example configure generated'.format(config_path))
+            self.get_logger().info('Default example configure generated'.format(config_path))
             return self.load_config(config_path, config_class)
         else:
             with open(config_path, encoding='utf8') as file:
@@ -125,3 +124,6 @@ class CBUBaseConfigured(CBUBase):
             with open(config_path, 'w', encoding='utf8') as file:
                 json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
             return config
+
+    def get_logger(self) -> CBULogger:
+        pass

@@ -25,7 +25,7 @@ class CBUServer(CBUBase, Configurable):
         Configurable.__init__(self, config_path, CBUServerConfig)
         CBUBase.__init__(self, self.config.aes_key)
         self.config = cast(CBUServerConfig, self.config)
-        completer = WordCompleter(['stop', 'send', 'list', 'help'])
+        completer = WordCompleter(['stop', 'list', 'help'])
         self.__prompt_session = PromptSession(completer=completer)
         self.__binding_done = Event()
         self._state = CBUServerState.STOPPED
@@ -119,13 +119,33 @@ class CBUServer(CBUBase, Configurable):
     def prompt_loop(self):
         while not self.is_stopped():
             text = self.__prompt_session.prompt('> ')
-            self.logger.info('Handling user input: {}'.format(text))
+            self.logger.debug('Handling user input: {}'.format(text))
             if text == 'stop':
                 self.stop()
-            if text == 'sendall':
-                for connection in self.__connections.values():
-                    connection._send_packet(ChatPacket(sender='CBUServer', receivers=[],
-                                                       payload={'author': 'Ivan1F', 'message': 'Hello CBU!'}))
+            elif text == 'list':
+                if len(self.__get_connected_connections()) == 0:
+                    self.logger.info('No online client')
+                else:
+                    self.logger.info('Online clients:')
+                    for connection in self.__get_connected_connections():
+                        self.logger.info(' - {}'.format(connection.meta.name))
+            elif text.startswith('stop') and text.find(' ') != -1:
+                target_name = text.split(' ', 1)[1]
+                connection = self.__connections.get(target_name)
+                if connection is not None:
+                    if connection.is_connected():
+                        self.logger.info('Stopping client {}'.format(target_name))
+                        connection.stop()
+                    else:
+                        self.logger.warning('Client {} is not connected'.format(target_name))
+                else:
+                    self.logger.warning('Client {} is not found'.format(target_name))
+            elif text == 'help':
+                self.logger.info('stop: stop the server')
+                self.logger.info('list: list online clients')
+                self.logger.info('stop <client_name>: stop a client')
+            else:
+                self.logger.warning('Invalid command: {}, type \'help\' for help'.format(text))
 
     def stop(self):
         self.__stop()
@@ -147,6 +167,7 @@ class ClientConnection(CBUBase):
         self.meta = meta
         self.server = server
         self.__server_address: Optional[Address] = None
+        self.__stop_flag = False
         super().__init__(cryptor)
 
     def open_connection(self, conn: socket.socket, address: Address):
@@ -173,7 +194,8 @@ class ClientConnection(CBUBase):
             self._on_packet(packet)
 
     def _main_loop(self):
-        while True:
+        self.__stop_flag = False
+        while not self.__stop_flag:
             try:
                 self._tick_connection()
             except (ConnectionResetError, net_util.EmptyContent) as e:
@@ -190,6 +212,7 @@ class ClientConnection(CBUBase):
         super().stop()
 
     def __stop(self):
+        self.__stop_flag = True
         if self._sock is not None:
             self._sock.close()
             self._sock = None

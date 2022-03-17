@@ -1,7 +1,7 @@
 import socket
 from enum import unique, auto
 from threading import Event
-from typing import cast
+from typing import cast, Union
 
 from chat_bridge_universal.core.basic import StateBase, CBUBaseConfigured
 from chat_bridge_universal.core.config import CBUClientConfig
@@ -40,14 +40,13 @@ class CBUClient(CBUBaseConfigured):
     def __connect_and_login(self):
         self.assert_state(CBUClientState.STARTING)
         self.__connect()
-        self.logger.debug('Sending login packet')
+        self.logger.debug('Connected to the server, sending login packet')
         self._send_packet(LoginPacket(name=self.config.name, password=self.config.password))
         result = self._receive_packet(LoginResultPacket)
         if result.success:
             self._set_state(CBUClientState.ONLINE)
-            self.logger.info('Logged in to the server')
         else:
-            self.logger.info('Failed to login to the server')
+            raise ConnectionError('Failed to login to the server')
 
     def __connect(self):
         self._set_state(CBUClientState.CONNECTING)
@@ -59,14 +58,14 @@ class CBUClient(CBUBaseConfigured):
         self._set_state(CBUClientState.STARTING)
         try:
             self.__connect_and_login()
-        except socket.error:
+        except Exception as e:
             self._set_state(CBUClientState.STOPPED)
-            self.logger.error('Failed to connect to {}'.format(self.config.server_address))
+            self.logger.error('Failed to connect to {}: {}'.format(self.config.server_address, e))
             return
         finally:
             self.__connection_done.set()
         try:
-            self.logger.info('Connected to {}'.format(self.config.server_address))
+            self.logger.info('Logged in to the server')
         finally:
             self.__stop()
         self.logger.info('bye')
@@ -75,7 +74,6 @@ class CBUClient(CBUBaseConfigured):
         self.__connection_done.clear()
         super().start()
         self.__connection_done.wait()
-        self.logger.debug('Started client')
 
     def stop(self):
         self.__stop()

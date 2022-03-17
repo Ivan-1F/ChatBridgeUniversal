@@ -133,7 +133,7 @@ class ClientConnection:
         self.meta = meta
 
     def open_connection(self, conn: socket.socket, address: Address):
-        net_util.send_data(conn, self._cryptor, LoginResultPacket(success=True))
+        net_util.send_packet(conn, self._cryptor, LoginResultPacket(success=True))
 
 
 if __name__ == '__main__':

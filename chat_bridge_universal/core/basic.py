@@ -61,7 +61,7 @@ class CBUBase:
         pass
 
     def _send_packet(self, packet: AbstractPacket):
-        net_util.send_data(self._sock, self._cryptor, packet)
+        net_util.send_packet(self._sock, self._cryptor, packet)
 
     PT = TypeVar('PT', bound=AbstractPacket)
 

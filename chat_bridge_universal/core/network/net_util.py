@@ -3,7 +3,7 @@ import socket
 import struct
 
 __all__ = [
-	'send_data',
+	'send_packet',
 	'receive_data',
 	'EmptyContent',
 ]
@@ -20,7 +20,7 @@ class EmptyContent(socket.error):
 	pass
 
 
-def send_data(sock: socket.socket, cryptor: AESCryptor, packet: AbstractPacket):
+def send_packet(sock: socket.socket, cryptor: AESCryptor, packet: AbstractPacket):
 	encrypted_data = cryptor.encrypt(json.dumps(packet.serialize(), ensure_ascii=False))
 	packet_data = struct.pack('I', len(encrypted_data)) + encrypted_data
 	sock.sendall(packet_data)

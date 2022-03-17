@@ -83,7 +83,7 @@ class CBUBase:
         def func():
             self._main_loop()
             with self.__thread_run_lock:
-                self.__thread_run = None
+                self.__main_thread = None
 
         with self.__thread_run_lock:
             if self.__main_thread is not None:

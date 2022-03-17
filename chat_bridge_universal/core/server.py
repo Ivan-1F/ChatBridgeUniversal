@@ -1,13 +1,15 @@
 import socket
 from enum import auto
 from threading import Event, Thread
-from typing import cast
+from typing import cast, Dict
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 
 from chat_bridge_universal.core.basic import CBUBase, StateBase
-from chat_bridge_universal.core.config import CBUServerConfig, Address
+from chat_bridge_universal.core.config import CBUServerConfig, Address, ClientMeta
+from chat_bridge_universal.core.network import net_util
+from chat_bridge_universal.core.network.cryptor import AESCryptor
 from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket
 
 
@@ -25,6 +27,9 @@ class CBUServer(CBUBase):
         self.__prompt_session = PromptSession(completer=completer)
         self.__binding_done = Event()
         self._state = CBUServerState.STOPPED
+        self.__clients: Dict[str, ClientConnection] = {}
+        for client in self.config.clients:
+            self.__clients[client.name] = ClientConnection(client, self._cryptor)
 
     def get_main_thread_name(self) -> str:
         return 'ServerThread'
@@ -40,14 +45,14 @@ class CBUServer(CBUBase):
 
     def __handle_connection(self, conn: socket.socket, addr: Address):
         packet = self._receive_packet(LoginPacket, sock=conn)
-        client = list(filter(lambda x: x.name == packet.name, self.config.clients))[0]
-        if client.password == packet.password:
-            self.logger.info('Identification of {} confirmed: {}'.format(addr, client.name))
-            self._send_packet(LoginResultPacket(success=True), sock=conn)
+        client = self.__clients.get(packet.name)
+        if client.meta.password == packet.password:
+            self.logger.info('Identification of {} confirmed: {}'.format(addr, client.meta.name))
+            client.open_connection(conn, addr)
         else:
             self.logger.warning(
-                'Wrong password during login for client {}: expected {} but received {}'.format(client.name,
-                                                                                                client.password,
+                'Wrong password during login for client {}: expected {} but received {}'.format(client.meta.name,
+                                                                                                client.meta.password,
                                                                                                 packet.password))
 
     def __bind(self):
@@ -120,6 +125,15 @@ class CBUServer(CBUBase):
             self._sock.close()
             self._sock = None
             self.logger.info('Socket closed')
+
+
+class ClientConnection:
+    def __init__(self, meta: ClientMeta, cryptor: AESCryptor):
+        self._cryptor = cryptor
+        self.meta = meta
+
+    def open_connection(self, conn: socket.socket, address: Address):
+        net_util.send_data(conn, self._cryptor, LoginResultPacket(success=True))
 
 
 if __name__ == '__main__':

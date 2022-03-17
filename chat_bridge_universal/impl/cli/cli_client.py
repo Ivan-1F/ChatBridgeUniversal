@@ -2,11 +2,12 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 
 from chat_bridge_universal.core.client import CBUClient
+from chat_bridge_universal.core.config import CBUClientConfig
 
 
 class CliClient(CBUClient):
     def __init__(self, config_path: str):
-        super().__init__(config_path)
+        super().__init__(self.load_config(config_path, CBUClientConfig))
         completer = WordCompleter(['stop', 'send', 'list', 'help'])
         self.__prompt_session = PromptSession(completer=completer)
 

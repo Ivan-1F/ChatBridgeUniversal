@@ -41,6 +41,21 @@ class CBUBase:
         else:
             self._cryptor = AESCryptor(aes)
 
+    def load_config(self, config_path: str, config_class: Type[T]) -> T:
+        config = config_class.get_default()
+        if not os.path.isfile(config_path):
+            self.logger.warning('Configure file not found!'.format(config_path))
+            with open(config_path, 'w', encoding='utf8') as file:
+                json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
+            self.logger.info('Default example configure generated'.format(config_path))
+            return self.load_config(config_path, config_class)
+        else:
+            with open(config_path, encoding='utf8') as file:
+                config.update_from(json.load(file))
+            with open(config_path, 'w', encoding='utf8') as file:
+                json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
+            return config
+
     def get_logger_name(self) -> str:
         pass
 
@@ -104,32 +119,3 @@ class CBUBase:
             else:
                 self.logger.warning('Joining current thread {}'.format(thread))
         self.logger.debug('Joined MainLoop thread')
-
-
-class SimpleConfigurable:
-    def __init__(self, config: dict, config_class: Type[T]):
-        self.config = config_class.deserialize(config)
-
-
-class FileConfigurable(SimpleConfigurable):
-    def __init__(self, config_path: str, config_class: Type[T]):
-        config = self.load_config(config_path, config_class)
-        super().__init__(config, config_class)
-
-    def load_config(self, config_path: str, config_class: Type[T]) -> T:
-        config = config_class.get_default()
-        if not os.path.isfile(config_path):
-            self.get_logger().warning('Configure file not found!'.format(config_path))
-            with open(config_path, 'w', encoding='utf8') as file:
-                json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
-            self.get_logger().info('Default example configure generated'.format(config_path))
-            return self.load_config(config_path, config_class)
-        else:
-            with open(config_path, encoding='utf8') as file:
-                config.update_from(json.load(file))
-            with open(config_path, 'w', encoding='utf8') as file:
-                json.dump(config.serialize(), file, ensure_ascii=False, indent=4)
-            return config
-
-    def get_logger(self) -> CBULogger:
-        pass

@@ -6,7 +6,7 @@ from typing import cast, Dict, Optional
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 
-from chat_bridge_universal.core.basic import StateBase, CBUBase, FileConfigurable
+from chat_bridge_universal.core.basic import StateBase, CBUBase
 from chat_bridge_universal.core.config import CBUServerConfig, Address, ClientMeta
 from chat_bridge_universal.core.network import net_util
 from chat_bridge_universal.core.network.cryptor import AESCryptor
@@ -20,11 +20,11 @@ class CBUServerState(StateBase):
     RUNNING = auto()  # running
 
 
-class CBUServer(CBUBase, FileConfigurable):
+class CBUServer(CBUBase):
     def __init__(self, config_path: str):
-        FileConfigurable.__init__(self, config_path, CBUServerConfig)
-        CBUBase.__init__(self, self.config.aes_key)
+        self.config = self.load_config(config_path, CBUServerConfig)
         self.config = cast(CBUServerConfig, self.config)
+        super().__init__(self.config.aes_key)
         completer = WordCompleter(['stop', 'list', 'help'])
         self.__prompt_session = PromptSession(completer=completer)
         self.__binding_done = Event()
@@ -53,9 +53,9 @@ class CBUServer(CBUBase, FileConfigurable):
             connection.open_connection(conn, addr)
         else:
             self.logger.warning(
-                'Wrong password during login for client {}: expected {} but received {}'.format(connection.meta.name,
-                                                                                                connection.meta.password,
-                                                                                                packet.password))
+                'Wrong password during login for client {}: expected {} but received {}'
+                .format(connection.meta.name, connection.meta.password, packet.password)
+            )
 
     def __bind(self):
         self._sock = socket.socket()
@@ -160,9 +160,6 @@ class CBUServer(CBUBase, FileConfigurable):
             self._sock.close()
             self._sock = None
             self.logger.info('Socket closed')
-
-    def get_logger(self) -> CBULogger:
-        return self.logger
 
 
 class ClientConnection(CBUBase):

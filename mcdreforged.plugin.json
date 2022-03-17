@@ -1,0 +1,23 @@
+{
+    "id": "chat_bridge_universal",
+    "version": "2.2.0",
+    "name": "ChatBridgeUniversal",
+    "description": {
+		"en_us": "Broadcast chats between Minecraft servers and more",
+		"zh_cn": "跨服聊天"
+    },
+    "author": [
+        "Ivan1F"
+    ],
+    "link": "https://github.com/Ivan-1F/ChatBridgeUniversal",
+    "dependencies": {
+        "mcdreforged": ">=2.2.0-"
+    },
+    "archive_name": "ChatBridge.pyz",
+    "entrypoint": "chat_bridge_universal.impl.mcdr.mcdr_entry",
+    "resources": [
+        "lang",
+        "LICENSE",
+        "__main__.py"
+    ]
+}

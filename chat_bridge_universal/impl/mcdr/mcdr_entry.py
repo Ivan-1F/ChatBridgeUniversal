@@ -26,7 +26,7 @@ def tr(key: str, *args, **kwargs) -> RTextBase:
 
 
 def display_help(source: CommandSource):
-    source.reply(tr('help_message', version=META.version, prefix=PREFIX, prefixes=', '.join(PREFIX)))
+    source.reply(tr('help_message', name=META.name, version=META.version, prefix=PREFIX))
 
 
 def display_status(source: CommandSource):

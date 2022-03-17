@@ -106,9 +106,15 @@ class CBUBase:
         self.logger.debug('Joined MainLoop thread')
 
 
-class Configurable:
+class SimpleConfigurable:
+    def __init__(self, config: dict, config_class: Type[T]):
+        self.config = config_class.deserialize(config)
+
+
+class FileConfigurable(SimpleConfigurable):
     def __init__(self, config_path: str, config_class: Type[T]):
-        self.config = self.load_config(config_path, config_class)
+        config = self.load_config(config_path, config_class)
+        super().__init__(config, config_class)
 
     def load_config(self, config_path: str, config_class: Type[T]) -> T:
         config = config_class.get_default()

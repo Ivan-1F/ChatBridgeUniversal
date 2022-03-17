@@ -1,9 +1,10 @@
 import socket
 from enum import unique, auto
 from threading import Event
-from typing import cast, Iterable
+from typing import cast, Iterable, TypeVar, Type
 
-from chat_bridge_universal.core.basic import StateBase, CBUBase, Configurable
+from chat_bridge_universal.common.logger import CBULogger
+from chat_bridge_universal.core.basic import StateBase, CBUBase, FileConfigurable
 from chat_bridge_universal.core.config import CBUClientConfig
 from chat_bridge_universal.core.network import net_util
 from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket, ChatPacket, ChatPayload, \
@@ -20,11 +21,14 @@ class CBUClientState(StateBase):
     STOPPED = auto()  # stopped
 
 
-class CBUClient(CBUBase, Configurable):
-    def __init__(self, config_path: str):
-        Configurable.__init__(self, config_path, CBUClientConfig)
+T = TypeVar('T', bound=CBUClientConfig)
+
+
+class CBUClient(CBUBase, FileConfigurable):
+    def __init__(self, config_path: str, config_class: Type[T] = CBUClientConfig):
+        FileConfigurable.__init__(self, config_path, config_class)
         CBUBase.__init__(self, self.config.aes_key)
-        self.config = cast(CBUClientConfig, self.config)
+        self.config = cast(config_class, self.config)
         self.__connection_done = Event()
         self.__state: CBUClientState = CBUClientState.STOPPED
 
@@ -127,6 +131,9 @@ class CBUClient(CBUBase, Configurable):
             self._sock.close()
             self._sock = None
             self.logger.info('Socket closed')
+
+    def get_logger(self) -> CBULogger:
+        return self.logger
 
 
 if __name__ == '__main__':

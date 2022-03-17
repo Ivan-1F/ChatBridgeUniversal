@@ -3,7 +3,7 @@ import os
 import socket
 from enum import Enum, unique
 from threading import Thread, current_thread, RLock
-from typing import TypeVar, Callable, Optional, Type, Iterable, overload, Union
+from typing import TypeVar, Callable, Optional, Type, Iterable, Union
 
 from chat_bridge_universal.common.logger import CBULogger
 from chat_bridge_universal.core.config import ConfigBase
@@ -52,11 +52,7 @@ class CBUBase:
     PT = TypeVar('PT', bound=AbstractPacket)
 
     def _receive_packet(self, packet_type: Type[PT]) -> PT:
-        try:
-            packet = net_util.receive_packet(self._sock, self._cryptor, packet_type, timeout=15)
-        except Exception as e:
-            self.logger.error(e)
-            raise
+        packet = net_util.receive_packet(self._sock, self._cryptor, packet_type, timeout=15)
         return packet
 
     def _start_thread(self, target: Callable, name: str):

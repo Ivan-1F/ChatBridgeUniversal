@@ -5,7 +5,8 @@ from typing import cast, Union
 
 from chat_bridge_universal.core.basic import StateBase, CBUBaseConfigured
 from chat_bridge_universal.core.config import CBUClientConfig
-from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket
+from chat_bridge_universal.core.network import net_util
+from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket, ChatPacket
 
 
 @unique
@@ -34,8 +35,8 @@ class CBUClient(CBUBaseConfigured):
     def is_stopped(self) -> bool:
         return self.in_state({CBUClientState.STOPPED})
 
-    def _is_connected(self) -> bool:
-        return self.in_state({CBUClientState.CONNECTED, CBUClientState.ONLINE})
+    def is_online(self) -> bool:
+        return self.in_state({CBUClientState.ONLINE})
 
     def __connect_and_login(self):
         self.assert_state(CBUClientState.STARTING)
@@ -53,6 +54,14 @@ class CBUClient(CBUBaseConfigured):
         self._sock.connect(self.config.server_address)
         self._set_state(CBUClientState.CONNECTED)
 
+    def _tick_connection(self):
+        try:
+            packet = self._receive_packet(ChatPacket)
+        except socket.timeout:
+            pass
+        else:
+            self.logger.debug('Received packet with payload: {}'.format(packet.payload))
+
     def _main_loop(self):
         self._sock = socket.socket()
         self._set_state(CBUClientState.STARTING)
@@ -61,11 +70,17 @@ class CBUClient(CBUBaseConfigured):
         except Exception as e:
             self._set_state(CBUClientState.STOPPED)
             self.logger.error('Failed to connect to {}: {}'.format(self.config.server_address, e))
-            return
-        finally:
             self.__connection_done.set()
-        try:
+            return
+        else:
             self.logger.info('Logged in to the server')
+            self.__connection_done.set()
+            while self.is_online():
+                try:
+                    self._tick_connection()
+                except (ConnectionResetError, net_util.EmptyContent) as e:
+                    self.logger.warning('Connection closed: {}'.format(e))
+                    break
         finally:
             self.__stop()
         self.logger.info('bye')

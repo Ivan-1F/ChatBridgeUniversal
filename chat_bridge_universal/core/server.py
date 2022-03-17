@@ -10,7 +10,7 @@ from chat_bridge_universal.core.basic import StateBase, CBUBaseConfigured, CBUBa
 from chat_bridge_universal.core.config import CBUServerConfig, Address, ClientMeta
 from chat_bridge_universal.core.network import net_util
 from chat_bridge_universal.core.network.cryptor import AESCryptor
-from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket
+from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket, ChatPacket
 
 
 class CBUServerState(StateBase):
@@ -111,6 +111,9 @@ class CBUServer(CBUBaseConfigured):
             self.logger.info('Handling user input: {}'.format(text))
             if text == 'stop':
                 self.stop()
+            if text == 'sendall':
+                for connection in self.__clients.values():
+                    connection._send_packet(ChatPacket(sender='CBUServer', receivers=[], payload={'msg': 'hi'}))
 
     def stop(self):
         self.__stop()

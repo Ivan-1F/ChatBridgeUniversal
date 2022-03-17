@@ -91,9 +91,9 @@ class CBUServer(CBUBaseConfigured):
                     self.logger.info('New connection #{} from {}'.format(counter, address))
                     Thread(name='Connection#{}'.format(counter), target=self.__handle_connection, args=(conn, address),
                            daemon=True).start()
-                except:
+                except Exception as e:
                     if not self.is_running():
-                        self.logger.exception('Error ticking server')
+                        self.logger.exception('Error ticking server: {}'.format(e))
         finally:
             self.__stop()
         self.logger.info('bye')

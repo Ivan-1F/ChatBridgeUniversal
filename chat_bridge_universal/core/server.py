@@ -10,7 +10,7 @@ from chat_bridge_universal.core.basic import StateBase, CBUBase, Configurable
 from chat_bridge_universal.core.config import CBUServerConfig, Address, ClientMeta
 from chat_bridge_universal.core.network import net_util
 from chat_bridge_universal.core.network.cryptor import AESCryptor
-from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket, ChatPacket
+from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket, ChatPacket, AbstractPacket
 
 
 class CBUServerState(StateBase):
@@ -30,7 +30,7 @@ class CBUServer(CBUBase, Configurable):
         self._state = CBUServerState.STOPPED
         self.__clients: Dict[str, ClientConnection] = {}
         for client in self.config.clients:
-            self.__clients[client.name] = ClientConnection(client, self._cryptor)
+            self.__clients[client.name] = ClientConnection(client, self._cryptor, self)
 
     def get_main_thread_name(self) -> str:
         return 'ServerThread'
@@ -65,6 +65,11 @@ class CBUServer(CBUBase, Configurable):
             raise
         finally:
             self.__binding_done.set()
+
+    def process_packet(self, packet: ChatPacket):
+        for client in self.__clients.values():
+            if client:
+                client.send_packet_invoker(packet)
 
     def _main_loop(self):
         self._state = CBUServerState.STARTING
@@ -114,7 +119,8 @@ class CBUServer(CBUBase, Configurable):
                 self.stop()
             if text == 'sendall':
                 for connection in self.__clients.values():
-                    connection._send_packet(ChatPacket(sender='CBUServer', receivers=[], payload={'msg': 'hi'}))
+                    connection._send_packet(ChatPacket(sender='CBUServer', receivers=[],
+                                                       payload={'author': 'Ivan1F', 'message': 'Hello CBU!'}))
 
     def stop(self):
         self.__stop()
@@ -132,15 +138,47 @@ class CBUServer(CBUBase, Configurable):
 
 
 class ClientConnection(CBUBase):
-    def __init__(self, meta: ClientMeta, cryptor: AESCryptor):
-        super().__init__(cryptor)
+    def __init__(self, meta: ClientMeta, cryptor: AESCryptor, server: CBUServer):
         self.meta = meta
+        self.server = server
         self.__server_address: Optional[Address] = None
+        super().__init__(cryptor)
 
     def open_connection(self, conn: socket.socket, address: Address):
         self._sock = conn
         self.__server_address = address
         self._send_packet(LoginResultPacket(success=True))
+        self.start()
+
+    def get_main_thread_name(self) -> str:
+        return self.server.get_main_thread_name() + '.' + self.meta.name
+
+    def get_logger_name(self) -> str:
+        return 'Server.{}'.format(self.meta.name)
+
+    def _on_packet(self, packet: ChatPacket):
+        self.server.process_packet(packet)
+
+    def _tick_connection(self):
+        try:
+            packet = self._receive_packet(ChatPacket)
+        except socket.timeout:
+            pass
+        else:
+            self._on_packet(packet)
+
+    def _main_loop(self):
+        while True:
+            try:
+                self._tick_connection()
+            except (ConnectionResetError, net_util.EmptyContent) as e:
+                self.logger.warning('Connection closed: {}'.format(e))
+                break
+        self.stop()
+        self.logger.info('bye')
+
+    def send_packet_invoker(self, packet: AbstractPacket):
+        self._send_packet(packet)
 
 
 if __name__ == '__main__':

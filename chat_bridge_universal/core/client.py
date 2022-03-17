@@ -1,12 +1,13 @@
 import socket
 from enum import unique, auto
 from threading import Event
-from typing import cast
+from typing import cast, Iterable
 
 from chat_bridge_universal.core.basic import StateBase, CBUBase, Configurable
 from chat_bridge_universal.core.config import CBUClientConfig
 from chat_bridge_universal.core.network import net_util
-from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket, ChatPacket
+from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket, ChatPacket, ChatPayload, \
+    AbstractPayload
 
 
 @unique
@@ -39,6 +40,28 @@ class CBUClient(CBUBase, Configurable):
     def is_online(self) -> bool:
         return self.in_state({CBUClientState.ONLINE})
 
+    def __build_and_send_packet(self, receiver: Iterable[str], payload: AbstractPayload, *,
+                                is_broadcast: bool):
+        self._send_packet(ChatPacket(
+            sender=self.config.name,
+            receivers=list(receiver),
+            broadcast=is_broadcast,
+            payload=payload.serialize()
+        ))
+
+    def _on_packet(self, packet: ChatPacket):
+        self.on_chat(packet.sender, ChatPayload.deserialize(packet.payload))
+
+    def on_chat(self, sender: str, payload: ChatPayload):
+        self.logger.debug('Received chat packet: [{}] '.format(sender) + payload.formatted_str)
+        pass
+
+    def send_chat(self, message: str, author: str = ''):
+        self.send_to_all(ChatPayload(author=author, message=message))
+
+    def send_to_all(self, payload: AbstractPayload):
+        self.__build_and_send_packet([], payload, is_broadcast=True)
+
     def __connect_and_login(self):
         self.assert_state(CBUClientState.STARTING)
         self.__connect()
@@ -61,7 +84,10 @@ class CBUClient(CBUBase, Configurable):
         except socket.timeout:
             pass
         else:
-            self.logger.debug('Received packet with payload: {}'.format(packet.payload))
+            try:
+                self._on_packet(packet)
+            except Exception as e:
+                self.logger.exception('Fail to process packet {}: {}'.format(packet, e))
 
     def _main_loop(self):
         self._sock = socket.socket()

@@ -16,6 +16,8 @@ class CliClient(CBUClient):
             self.logger.info('Handling user input: {}'.format(text))
             if text == 'stop':
                 self.stop()
+            else:
+                self.send_chat(text, self.config.name)
 
     def start(self):
         super().start()

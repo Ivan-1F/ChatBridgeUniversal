@@ -3,6 +3,7 @@ from threading import Thread, current_thread
 from typing import Callable, Optional, NamedTuple, Collection, Union
 
 from chat_bridge_universal.core.config import CBUConfigBase
+from chat_bridge_universal.core.network.cryptor import AESCryptor
 from chat_bridge_universal.core.state import CBUStateBase
 from chat_bridge_universal.utils.logger import CBULogger
 
@@ -22,6 +23,7 @@ class CBUBase:
         self._state: CBUStateBase
         self.__main_thread: Optional[Thread] = None
         self._sock: socket.socket = socket.socket()
+        self._cryptor = AESCryptor(self.config.aes_key)
 
     def _get_logger_name(self):
         return self.__class__.__name__

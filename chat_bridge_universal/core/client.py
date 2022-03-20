@@ -1,12 +1,24 @@
 from enum import auto, unique
+from typing import cast
 
-from chat_bridge_universal.core.basic import CBUBase
-from chat_bridge_universal.core.config import CBUConfigBase
+from chat_bridge_universal.core.basic import CBUBase, Address
+from chat_bridge_universal.core.config import CBUConfigBase, ClientMeta
 from chat_bridge_universal.core.state import CBUStateBase
 
 
 class CBUClientConfig(CBUConfigBase):
-    pass
+    name: str = 'MyClientName'
+    password: str = 'MyClientPassword'
+    server_hostname: str = '127.0.0.1'
+    server_port: int = 30001
+
+    @property
+    def client_info(self) -> ClientMeta:
+        return ClientMeta(name=self.name, password=self.password)
+
+    @property
+    def server_address(self) -> Address:
+        return Address(hostname=self.server_hostname, port=self.server_port)
 
 
 @unique
@@ -19,8 +31,9 @@ class CBUClientState(CBUStateBase):
 
 
 class CBUClient(CBUBase):
-    def __init__(self, config: CBUConfigBase):
+    def __init__(self, config: CBUClientConfig):
         super().__init__(config)
+        self.config = cast(CBUClientConfig, self.config)
         self.state = CBUClientState.STOPPED
 
     def _get_logger_name(self):
@@ -31,3 +44,6 @@ class CBUClient(CBUBase):
 
     def _main_loop(self):
         pass
+
+    def _connect(self, address: Address):
+        self._sock.connect(address)

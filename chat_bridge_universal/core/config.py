@@ -9,6 +9,11 @@ class CBUConfigBase(Serializable):
     aes_key: str = 'ThisIsSecret'
 
 
+class ClientMeta(Serializable):
+    name: str
+    password: str
+
+
 T = TypeVar('T', bound=CBUConfigBase)
 
 

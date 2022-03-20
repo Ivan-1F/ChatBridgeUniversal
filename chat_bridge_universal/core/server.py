@@ -50,6 +50,7 @@ class CBUServer(CBUBase):
             self._sock.listen(5)
             self._sock.settimeout(3)
             self.logger.info('Server started @ {}'.format(self.config.address))
+            self.logger.info('Waiting for connections')
             self._set_state(CBUServerState.RUNNING)
             while self.is_running():
                 try:

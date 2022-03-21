@@ -13,7 +13,7 @@ class CBUClientConfig(CBUConfigBase):
     server_port: int = 30001
 
     @property
-    def client_info(self) -> ClientMeta:
+    def client_meta(self) -> ClientMeta:
         return ClientMeta(name=self.name, password=self.password)
 
     @property

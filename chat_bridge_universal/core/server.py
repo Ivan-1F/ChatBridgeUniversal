@@ -60,7 +60,7 @@ class CBUServer(CBUBase):
             self.logger.info('Identification of {} confirmed: {}'.format(address, connection.config.name))
             network_utils.send_packet(conn, self._cryptor, LoginResultPacket(success=True, message='ok'))
             # self._send_packet(LoginResultPacket(success=True, message='ok'))
-            connection.open(conn, address)
+            connection.open(conn)
         else:
             self.logger.warning('Wrong password during login for client {}: expected {} but received {}'.format(connection.config.name, connection.config.password, login_packet.password))
             network_utils.send_packet(conn, self._cryptor, LoginResultPacket(success=False, message='Password incorrect'))
@@ -119,16 +119,29 @@ class CBUServer(CBUBase):
         super().start()
         self.console_loop()
 
+    def process_packet(self, packet: ChatPacket):
+        self.logger.info('Received chat from {}: {}'.format(packet.sender, packet.serialize()))
+        for connection in self.__connections.values():
+            if connection.is_online():
+                if packet.broadcast or connection.config.name in packet.receivers:
+                    if connection.config.name != packet.sender:  # do not send the message to the sender
+                        connection.send_packet(packet)
+
 
 class ClientConnection(CBUClient):
     def __init__(self, server: CBUServer, meta: ClientMeta):
         self.__meta = meta
+        self.__server = server
         super().__init__(CBUClientConfig(aes_key=server.config.aes_key, name=meta.name, password=meta.password,
                                          server_hostname=server.config.hostname, server_port=server.config.port))
 
-    def open(self, conn: socket.socket, address: Address):
+    def open(self, conn: socket.socket):
         self._sock = conn
         self.start()
+
+    def _on_packet(self, packet: ChatPacket):
+        super()._on_packet(packet)
+        self.__server.process_packet(packet)
 
     def _connect_and_login(self):
         pass

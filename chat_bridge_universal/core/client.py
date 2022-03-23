@@ -1,9 +1,12 @@
+import socket
 from enum import auto, unique
 from typing import cast
 
 from chat_bridge_universal.core.basic import CBUBase, Address
 from chat_bridge_universal.core.config import CBUConfigBase, ClientMeta
-from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket
+from chat_bridge_universal.core.network import network_utils
+from chat_bridge_universal.core.network.protocal import LoginPacket, LoginResultPacket, ChatPacket, ChatPayload, \
+    AbstractPayload
 from chat_bridge_universal.core.state import CBUStateBase
 
 
@@ -50,6 +53,21 @@ class CBUClient(CBUBase):
             self._set_state(CBUClientState.ONLINE)
         except Exception as e:
             self.logger.error('Failed to connect {}: {}'.format(self.config.server_address, e))
+        else:
+            while self.is_online():
+                try:
+                    self._tick_connection()
+                except (ConnectionResetError, network_utils.EmptyContent) as e:
+                    self.logger.warning('Connection closed: {}'.format(e))
+                    break
+                except socket.error:
+                    self.logger.exception('Failed to receive data, stopping client now')
+                    break
+                except Exception as e:
+                    self.logger.exception('Error ticking client connection: {}'.format(e))
+                    break
+        finally:
+            self._stop()
 
     def start(self):
         self.logger.debug('Starting client')
@@ -79,3 +97,36 @@ class CBUClient(CBUBase):
             self.logger.info('Logged in to the server')
         else:
             self.logger.error('Failed to login to the server: {}'.format(result.message))
+
+    def _tick_connection(self):
+        try:
+            packet = self.receive_packet(ChatPacket)
+        except socket.timeout:
+            pass
+        else:
+            self.logger.debug('Received chat packet : {}'.format(packet.serialize()))
+            try:
+                self._on_packet(packet)
+            except Exception as e:
+                self.logger.exception('Fail to process packet {}: {}'.format(packet, e))
+
+    def _on_packet(self, packet: ChatPacket):
+        self.on_chat(packet.sender, packet.payload)
+
+    def on_chat(self, sender: str, payload: ChatPayload):
+        pass
+
+    def send_chat(self, message: str, author: str = ''):
+        self.send_to_all(ChatPayload(author=author, message=message))
+
+    def send_to_all(self, payload: AbstractPayload):
+        self.send_packet(ChatPacket(
+            sender=self.config.name,
+            receivers=[],
+            broadcast=True,
+            payload=payload.serialize()
+        ))
+
+    def _stop(self):
+        super()._stop()
+        self._set_state(CBUClientState.STOPPED)

@@ -1,9 +1,11 @@
 import socket
 from threading import Thread, current_thread
-from typing import Callable, Optional, NamedTuple, Collection, Union
+from typing import Callable, Optional, NamedTuple, Collection, Union, TypeVar, Type
 
 from chat_bridge_universal.core.config import CBUConfigBase
+from chat_bridge_universal.core.network import network_utils
 from chat_bridge_universal.core.network.cryptor import AESCryptor
+from chat_bridge_universal.core.network.protocal import AbstractPacket
 from chat_bridge_universal.core.state import CBUStateBase
 from chat_bridge_universal.utils.logger import CBULogger
 
@@ -49,6 +51,14 @@ class CBUBase:
 
     def _main_loop(self):
         pass
+
+    def send_packet(self, packet: AbstractPacket):
+        network_utils.send_packet(self._sock, self._cryptor, packet)
+
+    T = TypeVar('T', bound=AbstractPacket)
+
+    def receive_packet(self, packet_type: Type[T]) -> T:
+        return network_utils.receive_packet(self._sock, self._cryptor, packet_type)
 
     def start(self):
         def func():

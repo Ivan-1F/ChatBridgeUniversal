@@ -68,6 +68,7 @@ class CBUClient(CBUBase):
                     break
         finally:
             self._stop()
+        self.logger.info('bye')
 
     def start(self):
         self.logger.debug('Starting client')
@@ -79,6 +80,9 @@ class CBUClient(CBUBase):
 
     def is_online(self) -> bool:
         return self.in_state(CBUClientState.ONLINE)
+
+    def is_running(self) -> bool:
+        return not self._is_stopped()
 
     def _connect(self, address: Address):
         self.assert_state(CBUClientState.STARTING)
@@ -97,6 +101,7 @@ class CBUClient(CBUBase):
             self.logger.info('Logged in to the server')
         else:
             self.logger.error('Failed to login to the server: {}'.format(result.message))
+            self._stop()
 
     def _tick_connection(self):
         try:
@@ -130,3 +135,9 @@ class CBUClient(CBUBase):
     def _stop(self):
         super()._stop()
         self._set_state(CBUClientState.STOPPED)
+
+    def restart(self):
+        self.logger.info('Restarting client')
+        if self.is_running():
+            self.stop()
+        self.start()

@@ -37,6 +37,7 @@ class CBUBase:
         return self._state.in_state(state)
 
     def _set_state(self, state: CBUStateBase):
+        self.logger.debug('Set state to {}'.format(state))
         self._state = state
 
     def assert_state(self, state: Union[CBUStateBase, Collection[CBUStateBase]]):
@@ -62,9 +63,10 @@ class CBUBase:
 
     def start(self):
         def func():
-            if self.__main_thread is not None:
-                raise RuntimeError('Already running')
             self._main_loop()
+            self.__main_thread = None
+        if self.__main_thread is not None:
+            raise RuntimeError('Already running')
         self.__main_thread = self._start_thread(target=func, name=self._get_main_loop_thread_name())
 
     def stop(self):

@@ -1,0 +1,14 @@
+chat_bridge_universal:
+  help_message: |
+    ------ {name} v{version} ------
+    跨服聊天
+    §7{prefix}§r 显示帮助信息
+    §7{prefix} restart§r 重启客户端
+    §7{prefix} status§r 查看客户端状态
+  help_summary: '跨服聊天控制'
+  status:
+    not_init: '跨服聊天未初始化，请检查服务端后台输出'
+    info: |
+      跨服聊天状态:
+        在线: {0}
+  restarted: '跨服聊天已重启'

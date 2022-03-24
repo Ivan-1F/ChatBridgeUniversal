@@ -1,4 +1,6 @@
-from logging import Logger, StreamHandler
+import weakref
+from logging import Logger, StreamHandler, DEBUG, INFO
+from typing import Set
 
 from colorlog import ColoredFormatter
 
@@ -19,6 +21,13 @@ class CBULogger(Logger):
         }
     }
     __DEBUG_SWITCH = False
+    __REFS: Set['CBULogger'] = weakref.WeakSet()
+
+    @classmethod
+    def set_debug_all(cls, value: bool):
+        cls.__DEBUG_SWITCH = value
+        for logger in cls.__REFS:
+            logger.__refresh_debug_level()
 
     def __init__(self, name: str):
         super().__init__(name)
@@ -30,3 +39,8 @@ class CBULogger(Logger):
             datefmt='%H:%M:%S'
         ))
         self.addHandler(self.console_handler)
+        self.__REFS.add(self)
+        self.__refresh_debug_level()
+
+    def __refresh_debug_level(self):
+        self.setLevel(DEBUG if self.__DEBUG_SWITCH else INFO)

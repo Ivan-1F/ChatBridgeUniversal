@@ -104,3 +104,8 @@ def on_server_stop(server: PluginServerInterface, return_code: int):
 @event_listener('more_apis.death_message')
 def on_player_death(server: PluginServerInterface, message: str):
     send_chat(message)
+
+
+# API
+def get_cbu_client() -> Optional[MCDRCBUClient]:
+    return client

@@ -56,7 +56,7 @@ def register_commands(server: PluginServerInterface):
 def on_load(server: PluginServerInterface, old_module):
     global config, client
     config_path = os.path.join(server.get_data_folder(), 'config.json')
-    config = server.load_config_simple(file_name=config_path, target_class=MCDRClientConfig)
+    config = server.load_config_simple(file_name=config_path, in_data_folder=False, target_class=MCDRClientConfig)
     client = MCDRCBUClient(config, server)
 
     server.register_help_message(PREFIX, tr('help_summary'))
